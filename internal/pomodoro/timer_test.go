@@ -233,6 +233,74 @@ func TestTimerSkipStopped(t *testing.T) {
 	}
 }
 
+func TestFullPomodoroCycle(t *testing.T) {
+	cfg := Config{
+		WorkDuration:       100 * time.Millisecond,
+		ShortBreakDuration: 50 * time.Millisecond,
+		LongBreakDuration:  100 * time.Millisecond,
+		LongBreakInterval:  2,
+	}
+	timer := NewTimer(cfg)
+	timer.Start()
+
+	if timer.Phase() != PhaseWork {
+		t.Fatalf("Expected PhaseWork, got %v", timer.Phase())
+	}
+
+	timer.Skip()
+	if timer.Phase() != PhaseShortBreak {
+		t.Errorf("Work → ShortBreak: got %v, want %v", timer.Phase(), PhaseShortBreak)
+	}
+	if timer.Sessions() != 1 {
+		t.Errorf("Sessions: got %v, want %v", timer.Sessions(), 1)
+	}
+
+	timer.Skip()
+	if timer.Phase() != PhaseWork {
+		t.Errorf("ShortBreak → Work: got %v, want %v", timer.Phase(), PhaseWork)
+	}
+
+	timer.Skip()
+	if timer.Phase() != PhaseLongBreak {
+		t.Errorf("Work (2nd) → LongBreak: got %v, want %v", timer.Phase(), PhaseLongBreak)
+	}
+	if timer.Sessions() != 2 {
+		t.Errorf("Sessions: got %v, want %v", timer.Sessions(), 2)
+	}
+
+	timer.Skip()
+	if timer.Phase() != PhaseWork {
+		t.Errorf("LongBreak → Work: got %v, want %v", timer.Phase(), PhaseWork)
+	}
+}
+
+func TestOnPhaseEndCallback(t *testing.T) {
+	cfg := Config{
+		WorkDuration:       1 * time.Minute,
+		ShortBreakDuration: 30 * time.Second,
+		LongBreakDuration:  2 * time.Minute,
+		LongBreakInterval:  2,
+	}
+	timer := NewTimer(cfg)
+	timer.Start()
+
+	var completedPhase Phase
+	var nextPhase Phase
+	timer.OnPhaseEnd = func(completed Phase, next Phase) {
+		completedPhase = completed
+		nextPhase = next
+	}
+
+	timer.Skip()
+
+	if completedPhase != PhaseWork {
+		t.Errorf("completedPhase: got %v, want %v", completedPhase, PhaseWork)
+	}
+	if nextPhase != PhaseShortBreak {
+		t.Errorf("nextPhase: got %v, want %v", nextPhase, PhaseShortBreak)
+	}
+}
+
 func TestSessionsCount(t *testing.T) {
 	cfg := DefaultConfig()
 	timer := NewTimer(cfg)

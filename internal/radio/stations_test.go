@@ -13,7 +13,7 @@ func TestDefaultStations(t *testing.T) {
 		t.Fatal("DefaultStations() returned empty slice")
 	}
 
-	for i, station := range stations {
+	for _, station := range stations {
 		t.Run(station.Name, func(t *testing.T) {
 			if station.Name == "" {
 				t.Error("Station name is empty")
@@ -40,8 +40,6 @@ func TestDefaultStations(t *testing.T) {
 				t.Error("Station description is empty")
 			}
 		})
-
-		_ = i
 	}
 }
 
