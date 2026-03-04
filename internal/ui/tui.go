@@ -609,11 +609,13 @@ func (m Model) renderRadioNowPlaying() string {
 	} else if m.radioPlayer.IsReconnecting() {
 		stateIcon = "🔄"
 		retryCount := m.radioPlayer.ReconnectCount()
-		statusText = fmt.Sprintf("Reconnecting... (attempt %d/3)", retryCount+1)
+		maxRetries := m.radioPlayer.MaxRetries()
+		statusText = fmt.Sprintf("Reconnecting... (attempt %d/%d)", retryCount+1, maxRetries)
 		stationName = m.radioPlayer.CurrentStation().Name
 	} else if m.radioPlayer.CanRetry() {
 		stateIcon = "❌"
-		statusText = "Connection failed (press Enter to retry)"
+		err := m.radioPlayer.Error()
+		statusText = fmt.Sprintf("Connection failed: %v (press Enter to retry)", err)
 		stationName = m.radioPlayer.CurrentStation().Name
 	} else if m.radioPlayer.IsPlaying() {
 		stateIcon = "📻"

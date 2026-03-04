@@ -99,10 +99,16 @@ func (p *Player) Play(index int) error {
 	p.mu.Unlock()
 
 	// Stop current stream and any reconnection attempts
-	p.Stop()
-	close(p.stopReconnect)
+	// Close stopReconnect first to signal the old goroutine to exit
+	// Use recover to handle case where it's already closed
+	func() {
+		defer func() { recover() }()
+		close(p.stopReconnect)
+	}()
 	p.stopReconnect = make(chan struct{})
 	p.retryChan = make(chan struct{}, 1)
+
+	p.Stop()
 
 	p.mu.Lock()
 	p.connecting = true
@@ -414,37 +420,33 @@ func (p *Player) Error() error {
 	return p.err
 }
 
+// MaxRetries returns the maximum number of reconnection attempts
+func (p *Player) MaxRetries() int {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.maxRetries
+}
+
 // CheckStream checks if the stream is still active and attempts reconnection if not
 // This should be called periodically by the UI tick
 func (p *Player) CheckStream() {
 	p.mu.Lock()
 	wasPlaying := p.playing && !p.paused
-	currentStation := p.currentStation
-	p.mu.Unlock()
-
-	if !wasPlaying || currentStation < 0 {
-		return
-	}
-
-	// If we were playing but now we're not, and we're not already reconnecting
-	// and this wasn't a manual stop, try to reconnect
-	p.mu.Lock()
 	isReconnecting := p.reconnecting
+	currentStation := p.currentStation
+	var station Station
+	if currentStation >= 0 && currentStation < len(p.stations) {
+		station = p.stations[currentStation]
+	}
+	stillPlaying := p.playing && !p.paused
 	p.mu.Unlock()
 
-	if !isReconnecting {
+	if wasPlaying && !stillPlaying && !isReconnecting && currentStation >= 0 {
 		p.mu.Lock()
-		stillPlaying := p.playing && !p.paused
+		p.reconnecting = true
+		p.err = fmt.Errorf("stream disconnected")
 		p.mu.Unlock()
 
-		if !stillPlaying {
-			// Stream dropped, trigger reconnection
-			station := p.stations[currentStation]
-			p.mu.Lock()
-			p.err = fmt.Errorf("stream disconnected")
-			p.mu.Unlock()
-
-			go p.connectWithRetry(station)
-		}
+		go p.connectWithRetry(station)
 	}
 }
