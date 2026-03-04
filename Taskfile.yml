@@ -99,15 +99,15 @@ tasks:
       - >-
         ffmpeg -y -f lavfi
         -i "sine=frequency=220:duration=30"
-        -i "sine=frequency=261:duration=30"
-        -i "sine=frequency=329:duration=30"
+        -f lavfi -i "sine=frequency=261:duration=30"
+        -f lavfi -i "sine=frequency=329:duration=30"
         -filter_complex "[0][1][2]amix=inputs=3:duration=longest,lowpass=f=800,volume=0.5"
         -t 30 -b:a 128k {{.MUSIC_DIR}}/ambient-chill.mp3
       - >-
         ffmpeg -y -f lavfi
         -i "sine=frequency=261:duration=30"
-        -i "sine=frequency=329:duration=30"
-        -i "sine=frequency=392:duration=30"
+        -f lavfi -i "sine=frequency=329:duration=30"
+        -f lavfi -i "sine=frequency=392:duration=30"
         -filter_complex "[0][1][2]amix=inputs=3:duration=longest,lowpass=f=600,volume=0.4"
         -t 30 -b:a 128k {{.MUSIC_DIR}}/dreamy-focus.mp3
       - echo "Generated sample tracks in {{.MUSIC_DIR}}/"
