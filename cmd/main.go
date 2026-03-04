@@ -15,6 +15,7 @@ import (
 func main() {
 	fmt.Println("🎵 Starting go-beats...")
 
+	// Determine music directory
 	musicDir := "./music"
 	if len(os.Args) > 1 {
 		musicDir = os.Args[1]
@@ -26,6 +27,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Initialize audio engine
 	engine := audio.NewEngine()
 
 	if err := engine.InitSpeaker(); err != nil {
@@ -33,8 +35,10 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Initialize radio player
 	radioPlayer := radio.NewPlayer()
 
+	// Scan music directory
 	if _, err := os.Stat(absDir); os.IsNotExist(err) {
 		fmt.Printf("Music directory not found: %s\n", absDir)
 		fmt.Println("Note: You can use --radio flag to listen to internet radio!")
@@ -47,6 +51,7 @@ func main() {
 		}
 	}
 
+	// Run TUI
 	model := ui.NewModel(engine, radioPlayer)
 	p := tea.NewProgram(model, tea.WithAltScreen())
 
@@ -55,6 +60,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Cleanup
 	engine.Stop()
 	radioPlayer.Stop()
 	fmt.Println("\n👋 Thanks for chilling with go-beats!")
