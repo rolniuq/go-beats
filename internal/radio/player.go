@@ -33,6 +33,13 @@ type Player struct {
 	// Connection state
 	connecting bool
 	err        error
+
+	// Reconnection state
+	reconnecting   bool
+	reconnectCount int
+	maxRetries     int
+	retryChan      chan struct{}
+	stopReconnect  chan struct{}
 }
 
 // NewPlayer creates a new radio player with default stations
@@ -41,6 +48,9 @@ func NewPlayer() *Player {
 		stations:       DefaultStations(),
 		currentStation: -1,
 		volumeLevel:    0,
+		maxRetries:     3,
+		retryChan:      make(chan struct{}, 1),
+		stopReconnect:  make(chan struct{}, 1),
 	}
 }
 
@@ -88,28 +98,82 @@ func (p *Player) Play(index int) error {
 	station := p.stations[index]
 	p.mu.Unlock()
 
-	// Stop current stream
+	// Stop current stream and any reconnection attempts
 	p.Stop()
+	close(p.stopReconnect)
+	p.stopReconnect = make(chan struct{})
+	p.retryChan = make(chan struct{}, 1)
 
 	p.mu.Lock()
 	p.connecting = true
 	p.err = nil
 	p.currentStation = index
+	p.reconnectCount = 0
+	p.reconnecting = false
 	p.mu.Unlock()
 
 	// Connect in a goroutine to avoid blocking the UI
-	go func() {
+	go p.connectWithRetry(station)
+
+	return nil
+}
+
+func (p *Player) connectWithRetry(station Station) {
+	backoff := 2 * time.Second
+
+	for {
 		err := p.connectAndPlay(station)
 		p.mu.Lock()
 		p.connecting = false
 		if err != nil {
 			p.err = err
 			p.playing = false
+			p.reconnectCount++
+
+			if p.reconnectCount < p.maxRetries {
+				p.reconnecting = true
+				p.mu.Unlock()
+
+				// Wait for exponential backoff or manual retry
+				select {
+				case <-p.stopReconnect:
+					p.mu.Lock()
+					p.reconnecting = false
+					p.mu.Unlock()
+					return
+				case <-time.After(backoff):
+					backoff *= 2 // Exponential backoff: 2s, 4s, 8s
+				}
+				p.mu.Lock()
+				p.reconnecting = false
+				p.mu.Unlock()
+
+				// Try again
+				continue
+			}
+		} else {
+			p.reconnectCount = 0
 		}
 		p.mu.Unlock()
-	}()
 
-	return nil
+		// Check for manual retry request
+		if p.reconnectCount >= p.maxRetries {
+			select {
+			case <-p.retryChan:
+				p.mu.Lock()
+				p.reconnectCount = 0
+				p.err = nil
+				p.connecting = true
+				p.mu.Unlock()
+				backoff = 2 * time.Second
+				continue
+			case <-p.stopReconnect:
+				return
+			}
+		}
+
+		return
+	}
 }
 
 func (p *Player) connectAndPlay(station Station) error {
@@ -305,9 +369,82 @@ func (p *Player) IsConnecting() bool {
 	return p.connecting
 }
 
+// IsReconnecting returns whether a reconnection is in progress
+func (p *Player) IsReconnecting() bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.reconnecting
+}
+
+// ReconnectCount returns the number of reconnection attempts
+func (p *Player) ReconnectCount() int {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.reconnectCount
+}
+
+// CanRetry returns whether manual retry is available (after max retries reached)
+func (p *Player) CanRetry() bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.reconnectCount >= p.maxRetries && !p.reconnecting && p.err != nil
+}
+
+// Retry manually retries the last failed connection
+func (p *Player) Retry() bool {
+	p.mu.Lock()
+	if p.reconnectCount < p.maxRetries || p.err == nil {
+		p.mu.Unlock()
+		return false
+	}
+	p.mu.Unlock()
+
+	select {
+	case p.retryChan <- struct{}{}:
+		return true
+	default:
+		return false
+	}
+}
+
 // Error returns the last error, if any
 func (p *Player) Error() error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return p.err
+}
+
+// CheckStream checks if the stream is still active and attempts reconnection if not
+// This should be called periodically by the UI tick
+func (p *Player) CheckStream() {
+	p.mu.Lock()
+	wasPlaying := p.playing && !p.paused
+	currentStation := p.currentStation
+	p.mu.Unlock()
+
+	if !wasPlaying || currentStation < 0 {
+		return
+	}
+
+	// If we were playing but now we're not, and we're not already reconnecting
+	// and this wasn't a manual stop, try to reconnect
+	p.mu.Lock()
+	isReconnecting := p.reconnecting
+	p.mu.Unlock()
+
+	if !isReconnecting {
+		p.mu.Lock()
+		stillPlaying := p.playing && !p.paused
+		p.mu.Unlock()
+
+		if !stillPlaying {
+			// Stream dropped, trigger reconnection
+			station := p.stations[currentStation]
+			p.mu.Lock()
+			p.err = fmt.Errorf("stream disconnected")
+			p.mu.Unlock()
+
+			go p.connectWithRetry(station)
+		}
+	}
 }
