@@ -83,22 +83,22 @@ Tab: key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "switch mode"))
 **Assignee:** OpenCode (Dev 2)
 **Priority:** HIGH
 **Branch:** `feat/ticket-2-radio-engine`
-**Status:** 🟡 IN PROGRESS
+**Status:** ✅ DONE (OpenCode / Dev 2)
 **Depends on:** None (radio package already scaffolded)
 
 ### Description
 Wire the radio player into `main.go`, handle the `--radio` CLI flag, and ensure the audio speaker is properly shared between local player and radio player (only one should play at a time).
 
 ### Acceptance Criteria
-- [ ] Add `--radio` flag to start directly in radio mode
-- [ ] Add `--station <index>` flag to auto-play a specific station on startup
-- [ ] Add `--list-stations` flag to print available stations and exit
-- [ ] `NewModel()` in TUI now accepts both `*audio.Engine` and `*radio.Player`
-- [ ] When switching from local → radio, local playback stops
-- [ ] When switching from radio → local, radio stream stops
-- [ ] Speaker is initialized once, shared by both players
-- [ ] Graceful shutdown: stop both radio stream and local playback on quit
-- [ ] If no `music/` directory exists and no `--radio` flag, default to radio mode instead of exiting with error
+- [x] Add `--radio` flag to start directly in radio mode
+- [x] Add `--station <index>` flag to auto-play a specific station on startup
+- [x] Add `--list-stations` flag to print available stations and exit
+- [x] `NewModel()` in TUI now accepts both `*audio.Engine` and `*radio.Player`
+- [x] When switching from local → radio, local playback stops
+- [x] When switching from radio → local, radio stream stops
+- [x] Speaker is initialized once, shared by both players
+- [x] Graceful shutdown: stop both radio stream and local playback on quit
+- [x] If no `music/` directory exists and no `--radio` flag, default to radio mode instead of exiting with error
 
 ### Files to Modify
 - `cmd/main.go` — CLI flags and startup logic
