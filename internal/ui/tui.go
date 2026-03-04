@@ -161,14 +161,18 @@ func NewModel(engine *audio.Engine, radioPlayer *radio.Player) Model {
 }
 
 func (m *Model) SetMode(mode Mode) {
-	if mode == m.mode {
+	if m.mode == mode {
 		return
 	}
 
 	if mode == ModeRadio {
-		m.engine.Stop()
-	} else if m.radioPlayer != nil {
-		m.radioPlayer.Stop()
+		if m.engine != nil {
+			m.engine.Stop()
+		}
+	} else {
+		if m.radioPlayer != nil {
+			m.radioPlayer.Stop()
+		}
 	}
 
 	m.cursor = 0
@@ -240,7 +244,7 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.setStatus("📻 Radio mode")
 		} else {
 			m.SetMode(ModeLocal)
-			m.setStatus("💿 Local mode")
+			m.setStatus("♪ Local mode")
 		}
 		return m, nil
 
