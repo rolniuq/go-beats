@@ -28,7 +28,7 @@ cmd/
 **Assignee:** Claude
 **Priority:** HIGH
 **Branch:** `feat/ticket-1-radio-tui`
-**Status:** 🟡 IN PROGRESS
+**Status:** ✅ COMPLETED
 **Depends on:** TICKET-2 (but can stub radio player for now)
 
 ### Description

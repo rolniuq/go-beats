@@ -160,6 +160,20 @@ func NewModel(engine *audio.Engine, radioPlayer *radio.Player) Model {
 	return m
 }
 
+func (m *Model) SetMode(mode Mode) {
+	if mode == m.mode {
+		return
+	}
+
+	if mode == ModeRadio {
+		m.engine.Stop()
+	} else if m.radioPlayer != nil {
+		m.radioPlayer.Stop()
+	}
+
+	m.mode = mode
+}
+
 func (m Model) Init() tea.Cmd {
 	return tea.Batch(tickCmd(), tea.WindowSize())
 }
@@ -210,13 +224,38 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch {
 	case key.Matches(msg, keys.Quit):
 		m.engine.Stop()
+		if m.radioPlayer != nil {
+			m.radioPlayer.Stop()
+		}
 		return m, tea.Quit
 
 	case key.Matches(msg, keys.Help):
 		m.showHelp = !m.showHelp
 		return m, nil
 
+	case key.Matches(msg, keys.Tab):
+		if m.mode == ModeLocal {
+			m.SetMode(ModeRadio)
+			m.setStatus("📻 Radio mode")
+		} else {
+			m.SetMode(ModeLocal)
+			m.setStatus("💿 Local mode")
+		}
+		return m, nil
+
 	case key.Matches(msg, keys.Play):
+		if m.mode == ModeRadio {
+			if m.radioPlayer != nil {
+				m.radioPlayer.Pause()
+				if m.radioPlayer.IsPaused() {
+					m.setStatus("⏸ Radio paused")
+				} else {
+					m.setStatus("▶ Radio playing")
+				}
+			}
+			return m, nil
+		}
+
 		if m.engine.TrackCount() == 0 {
 			return m, nil
 		}
@@ -236,6 +275,14 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case key.Matches(msg, keys.Next):
+		if m.mode == ModeRadio && m.radioPlayer != nil {
+			if err := m.radioPlayer.NextStation(); err == nil {
+				m.cursor = m.radioPlayer.CurrentStationIndex()
+				m.setStatus("⏭ Next station")
+			}
+			return m, nil
+		}
+
 		if err := m.engine.Next(); err == nil {
 			m.cursor = m.engine.CurrentIndex()
 			m.setStatus("⏭ Next track")
@@ -243,6 +290,14 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case key.Matches(msg, keys.Prev):
+		if m.mode == ModeRadio && m.radioPlayer != nil {
+			if err := m.radioPlayer.PrevStation(); err == nil {
+				m.cursor = m.radioPlayer.CurrentStationIndex()
+				m.setStatus("⏮ Previous station")
+			}
+			return m, nil
+		}
+
 		if err := m.engine.Prev(); err == nil {
 			m.cursor = m.engine.CurrentIndex()
 			m.setStatus("⏮ Previous track")
@@ -250,11 +305,23 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case key.Matches(msg, keys.VolUp):
+		if m.mode == ModeRadio && m.radioPlayer != nil {
+			m.radioPlayer.VolumeUp()
+			m.setStatus(fmt.Sprintf("🔊 Volume: %d%%", m.radioPlayer.GetVolumePercent()))
+			return m, nil
+		}
+
 		m.engine.VolumeUp()
 		m.setStatus(fmt.Sprintf("🔊 Volume: %d%%", m.engine.GetVolumePercent()))
 		return m, nil
 
 	case key.Matches(msg, keys.VolDown):
+		if m.mode == ModeRadio && m.radioPlayer != nil {
+			m.radioPlayer.VolumeDown()
+			m.setStatus(fmt.Sprintf("🔉 Volume: %d%%", m.radioPlayer.GetVolumePercent()))
+			return m, nil
+		}
+
 		m.engine.VolumeDown()
 		m.setStatus(fmt.Sprintf("🔉 Volume: %d%%", m.engine.GetVolumePercent()))
 		return m, nil
@@ -301,18 +368,43 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case key.Matches(msg, keys.Up):
+		if m.mode == ModeRadio {
+			if m.cursor > 0 {
+				m.cursor--
+			}
+			return m, nil
+		}
+
 		if m.cursor > 0 {
 			m.cursor--
 		}
 		return m, nil
 
 	case key.Matches(msg, keys.Down):
+		if m.mode == ModeRadio {
+			if m.radioPlayer != nil && m.cursor < m.radioPlayer.StationCount()-1 {
+				m.cursor++
+			}
+			return m, nil
+		}
+
 		if m.cursor < m.engine.TrackCount()-1 {
 			m.cursor++
 		}
 		return m, nil
 
 	case key.Matches(msg, keys.Enter):
+		if m.mode == ModeRadio && m.radioPlayer != nil {
+			if m.cursor >= 0 && m.cursor < m.radioPlayer.StationCount() {
+				if err := m.radioPlayer.Play(m.cursor); err != nil {
+					m.setStatus("❌ " + err.Error())
+				} else {
+					m.setStatus("📻 Connecting...")
+				}
+			}
+			return m, nil
+		}
+
 		if m.cursor >= 0 && m.cursor < m.engine.TrackCount() {
 			m.engine.Play(m.cursor)
 			m.setStatus("▶ Playing")
@@ -365,8 +457,12 @@ func (m Model) View() string {
 		sections = append(sections, m.renderPomodoro())
 	}
 
-	// Track List
-	sections = append(sections, m.renderTrackList())
+	// Track List / Station List
+	if m.mode == ModeRadio {
+		sections = append(sections, m.renderStationList())
+	} else {
+		sections = append(sections, m.renderTrackList())
+	}
 
 	// Status
 	if time.Now().Before(m.statusExp) {
