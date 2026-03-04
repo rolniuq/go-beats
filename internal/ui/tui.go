@@ -200,6 +200,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.pomo.Tick()
 		m.updateVisualizer()
 
+		// Check radio stream status
+		if m.mode == ModeRadio && m.radioPlayer != nil {
+			m.radioPlayer.CheckStream()
+		}
+
 		// Check if we need to auto-advance (track finished)
 		if m.engine.IsPlaying() {
 			pos := m.engine.GetPosition()
@@ -390,6 +395,14 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	case key.Matches(msg, keys.Enter):
 		if m.mode == ModeRadio && m.radioPlayer != nil {
+			// Check for manual retry
+			if m.radioPlayer.CanRetry() {
+				if m.radioPlayer.Retry() {
+					m.setStatus("🔄 Retrying...")
+				}
+				return m, nil
+			}
+
 			if m.cursor >= 0 && m.cursor < m.radioPlayer.StationCount() {
 				if err := m.radioPlayer.Play(m.cursor); err != nil {
 					m.setStatus("❌ " + err.Error())
@@ -592,6 +605,17 @@ func (m Model) renderRadioNowPlaying() string {
 	} else if m.radioPlayer.IsConnecting() {
 		stateIcon = "🔄"
 		statusText = "Connecting..."
+		stationName = m.radioPlayer.CurrentStation().Name
+	} else if m.radioPlayer.IsReconnecting() {
+		stateIcon = "🔄"
+		retryCount := m.radioPlayer.ReconnectCount()
+		maxRetries := m.radioPlayer.MaxRetries()
+		statusText = fmt.Sprintf("Reconnecting... (attempt %d/%d)", retryCount+1, maxRetries)
+		stationName = m.radioPlayer.CurrentStation().Name
+	} else if m.radioPlayer.CanRetry() {
+		stateIcon = "❌"
+		err := m.radioPlayer.Error()
+		statusText = fmt.Sprintf("Connection failed: %v (press Enter to retry)", err)
 		stationName = m.radioPlayer.CurrentStation().Name
 	} else if m.radioPlayer.IsPlaying() {
 		stateIcon = "📻"
@@ -808,7 +832,7 @@ func (m Model) renderHelp() string {
 			helpItems = []string{
 				"space: play/pause", "n/p: next/prev station",
 				"+/-: volume", "↑↓: navigate stations",
-				"enter: play station", "tab: switch mode",
+				"enter: play/retry", "tab: switch mode",
 				"t: start/stop pomodoro", "T: pause pomodoro",
 				"s: skip phase", "?: toggle help", "q: quit",
 			}
