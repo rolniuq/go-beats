@@ -160,6 +160,21 @@ func NewModel(engine *audio.Engine, radioPlayer *radio.Player) Model {
 	return m
 }
 
+func (m *Model) SetMode(mode Mode) {
+	if mode == m.mode {
+		return
+	}
+
+	if mode == ModeRadio {
+		m.engine.Stop()
+	} else if m.radioPlayer != nil {
+		m.radioPlayer.Stop()
+	}
+
+	m.cursor = 0
+	m.mode = mode
+}
+
 func (m Model) Init() tea.Cmd {
 	return tea.Batch(tickCmd(), tea.WindowSize())
 }
@@ -210,13 +225,38 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch {
 	case key.Matches(msg, keys.Quit):
 		m.engine.Stop()
+		if m.radioPlayer != nil {
+			m.radioPlayer.Stop()
+		}
 		return m, tea.Quit
 
 	case key.Matches(msg, keys.Help):
 		m.showHelp = !m.showHelp
 		return m, nil
 
+	case key.Matches(msg, keys.Tab):
+		if m.mode == ModeLocal {
+			m.SetMode(ModeRadio)
+			m.setStatus("📻 Radio mode")
+		} else {
+			m.SetMode(ModeLocal)
+			m.setStatus("💿 Local mode")
+		}
+		return m, nil
+
 	case key.Matches(msg, keys.Play):
+		if m.mode == ModeRadio {
+			if m.radioPlayer != nil {
+				m.radioPlayer.Pause()
+				if m.radioPlayer.IsPaused() {
+					m.setStatus("⏸ Radio paused")
+				} else {
+					m.setStatus("▶ Radio playing")
+				}
+			}
+			return m, nil
+		}
+
 		if m.engine.TrackCount() == 0 {
 			return m, nil
 		}
@@ -236,6 +276,14 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case key.Matches(msg, keys.Next):
+		if m.mode == ModeRadio && m.radioPlayer != nil {
+			if err := m.radioPlayer.NextStation(); err == nil {
+				m.cursor = m.radioPlayer.CurrentStationIndex()
+				m.setStatus("⏭ Next station")
+			}
+			return m, nil
+		}
+
 		if err := m.engine.Next(); err == nil {
 			m.cursor = m.engine.CurrentIndex()
 			m.setStatus("⏭ Next track")
@@ -243,6 +291,14 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case key.Matches(msg, keys.Prev):
+		if m.mode == ModeRadio && m.radioPlayer != nil {
+			if err := m.radioPlayer.PrevStation(); err == nil {
+				m.cursor = m.radioPlayer.CurrentStationIndex()
+				m.setStatus("⏮ Previous station")
+			}
+			return m, nil
+		}
+
 		if err := m.engine.Prev(); err == nil {
 			m.cursor = m.engine.CurrentIndex()
 			m.setStatus("⏮ Previous track")
@@ -250,11 +306,23 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case key.Matches(msg, keys.VolUp):
+		if m.mode == ModeRadio && m.radioPlayer != nil {
+			m.radioPlayer.VolumeUp()
+			m.setStatus(fmt.Sprintf("🔊 Volume: %d%%", m.radioPlayer.GetVolumePercent()))
+			return m, nil
+		}
+
 		m.engine.VolumeUp()
 		m.setStatus(fmt.Sprintf("🔊 Volume: %d%%", m.engine.GetVolumePercent()))
 		return m, nil
 
 	case key.Matches(msg, keys.VolDown):
+		if m.mode == ModeRadio && m.radioPlayer != nil {
+			m.radioPlayer.VolumeDown()
+			m.setStatus(fmt.Sprintf("🔉 Volume: %d%%", m.radioPlayer.GetVolumePercent()))
+			return m, nil
+		}
+
 		m.engine.VolumeDown()
 		m.setStatus(fmt.Sprintf("🔉 Volume: %d%%", m.engine.GetVolumePercent()))
 		return m, nil
@@ -307,12 +375,27 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case key.Matches(msg, keys.Down):
-		if m.cursor < m.engine.TrackCount()-1 {
+		maxIdx := m.engine.TrackCount() - 1
+		if m.mode == ModeRadio && m.radioPlayer != nil {
+			maxIdx = m.radioPlayer.StationCount() - 1
+		}
+		if m.cursor < maxIdx {
 			m.cursor++
 		}
 		return m, nil
 
 	case key.Matches(msg, keys.Enter):
+		if m.mode == ModeRadio && m.radioPlayer != nil {
+			if m.cursor >= 0 && m.cursor < m.radioPlayer.StationCount() {
+				if err := m.radioPlayer.Play(m.cursor); err != nil {
+					m.setStatus("❌ " + err.Error())
+				} else {
+					m.setStatus("📻 Connecting...")
+				}
+			}
+			return m, nil
+		}
+
 		if m.cursor >= 0 && m.cursor < m.engine.TrackCount() {
 			m.engine.Play(m.cursor)
 			m.setStatus("▶ Playing")
@@ -329,15 +412,19 @@ func (m *Model) setStatus(msg string) {
 }
 
 func (m *Model) updateVisualizer() {
-	if m.engine.IsPlaying() {
+	isPlaying := m.engine.IsPlaying()
+	if m.mode == ModeRadio && m.radioPlayer != nil {
+		isPlaying = m.radioPlayer.IsPlaying()
+	}
+
+	if isPlaying {
 		for i := range m.vizBars {
-			// Simulate audio visualization with smooth random bars
 			target := rand.Float64()*0.8 + 0.1
 			m.vizBars[i] = m.vizBars[i]*0.6 + target*0.4
 		}
 	} else {
 		for i := range m.vizBars {
-			m.vizBars[i] *= 0.85 // fade out
+			m.vizBars[i] *= 0.85
 		}
 	}
 }
@@ -365,8 +452,12 @@ func (m Model) View() string {
 		sections = append(sections, m.renderPomodoro())
 	}
 
-	// Track List
-	sections = append(sections, m.renderTrackList())
+	// Track List / Station List
+	if m.mode == ModeRadio {
+		sections = append(sections, m.renderStationList())
+	} else {
+		sections = append(sections, m.renderTrackList())
+	}
 
 	// Status
 	if time.Now().Before(m.statusExp) {
@@ -439,6 +530,10 @@ func (m Model) renderVisualizer() string {
 }
 
 func (m Model) renderNowPlaying() string {
+	if m.mode == ModeRadio {
+		return m.renderRadioNowPlaying()
+	}
+
 	track := m.engine.CurrentTrack()
 
 	var trackName string
@@ -448,7 +543,6 @@ func (m Model) renderNowPlaying() string {
 		trackName = "No track selected"
 	}
 
-	// Play state icon
 	var stateIcon string
 	if m.engine.IsPlaying() {
 		stateIcon = "▶"
@@ -458,18 +552,15 @@ func (m Model) renderNowPlaying() string {
 		stateIcon = "⏹"
 	}
 
-	// Loop indicator
 	loopIndicator := ""
 	if m.engine.IsLoop() {
 		loopIndicator = " 🔁"
 	}
 
-	// Progress bar
 	pos := m.engine.GetPosition()
 	dur := m.engine.GetDuration()
 	progressBar := m.renderProgressBar(pos, dur, 40)
 
-	// Volume
 	volPct := m.engine.GetVolumePercent()
 	volBar := m.renderVolumeBar(volPct, 15)
 
@@ -479,6 +570,50 @@ func (m Model) renderNowPlaying() string {
 		lipgloss.NewStyle().Foreground(colorText).Bold(true).Render(trackName),
 		mutedStyle.Render(loopIndicator),
 		progressBar,
+		volBar,
+	)
+
+	return boxStyle.Width(min(m.width-4, 70)).Render(nowPlaying)
+}
+
+func (m Model) renderRadioNowPlaying() string {
+	var stateIcon string
+	var statusText string
+	var stationName string
+
+	if m.radioPlayer == nil {
+		stateIcon = "⏹"
+		statusText = "No radio player"
+		stationName = "No station"
+	} else if m.radioPlayer.IsConnecting() {
+		stateIcon = "🔄"
+		statusText = "Connecting..."
+		stationName = m.radioPlayer.CurrentStation().Name
+	} else if m.radioPlayer.IsPlaying() {
+		stateIcon = "📻"
+		statusText = "LIVE"
+		stationName = m.radioPlayer.CurrentStation().Name
+	} else if m.radioPlayer.IsPaused() {
+		stateIcon = "⏸"
+		statusText = "Paused"
+		stationName = m.radioPlayer.CurrentStation().Name
+	} else {
+		stateIcon = "⏹"
+		statusText = "Stopped"
+		stationName = "No station"
+	}
+
+	liveIndicator := lipgloss.NewStyle().Foreground(colorLove).Bold(true).Render(" 📍 LIVE")
+
+	volPct := m.radioPlayer.GetVolumePercent()
+	volBar := m.renderVolumeBar(volPct, 15)
+
+	nowPlaying := fmt.Sprintf(
+		"  %s %s%s\n  %s\n  %s",
+		lipgloss.NewStyle().Foreground(colorAccent).Bold(true).Render(stateIcon),
+		lipgloss.NewStyle().Foreground(colorText).Bold(true).Render(stationName),
+		liveIndicator,
+		statusStyle.Render("  "+statusText),
 		volBar,
 	)
 
@@ -560,6 +695,58 @@ func (m Model) renderPomodoro() string {
 		Render(pomoContent)
 }
 
+func (m Model) renderStationList() string {
+	stations := m.radioPlayer.Stations()
+	if len(stations) == 0 {
+		return "\n" + mutedStyle.Render("  No radio stations available.")
+	}
+
+	header := titleStyle.Render("📻 Radio Stations")
+
+	maxVisible := 8
+	if m.height > 30 {
+		maxVisible = min(m.height-25, 15)
+	}
+
+	start := 0
+	if m.cursor >= maxVisible {
+		start = m.cursor - maxVisible + 1
+	}
+	end := start + maxVisible
+	if end > len(stations) {
+		end = len(stations)
+	}
+
+	var list strings.Builder
+	for i := start; i < end; i++ {
+		station := stations[i]
+		currentIdx := m.radioPlayer.CurrentStationIndex()
+
+		var line string
+		if i == currentIdx && i == m.cursor {
+			line = activeTrackStyle.Render(fmt.Sprintf("▸ 📻 %s", station.Name))
+		} else if i == currentIdx {
+			line = activeTrackStyle.Render(fmt.Sprintf("  📻 %s", station.Name))
+		} else if i == m.cursor {
+			line = selectedTrackStyle.Render(fmt.Sprintf("▸   %s", station.Name))
+		} else {
+			line = trackStyle.Render(fmt.Sprintf("    %s", station.Name))
+		}
+
+		if station.Genre != "" {
+			line += mutedStyle.Render(fmt.Sprintf(" (%s)", station.Genre))
+		}
+		list.WriteString(line + "\n")
+	}
+
+	scrollInfo := ""
+	if len(stations) > maxVisible {
+		scrollInfo = mutedStyle.Render(fmt.Sprintf("  [%d/%d stations]", m.cursor+1, len(stations)))
+	}
+
+	return "\n" + header + "\n" + list.String() + scrollInfo
+}
+
 func (m Model) renderTrackList() string {
 	tracks := m.engine.Tracks()
 	if len(tracks) == 0 {
@@ -612,12 +799,23 @@ func (m Model) renderTrackList() string {
 
 func (m Model) renderHelp() string {
 	if m.showHelp {
-		helpItems := []string{
-			"space: play/pause", "n: next", "p: prev",
-			"+/-: volume", "l: loop", "↑↓/jk: navigate",
-			"enter: select track", "t: start/stop pomodoro",
-			"T: pause pomodoro", "s: skip phase",
-			"?: toggle help", "q: quit",
+		var helpItems []string
+		if m.mode == ModeRadio {
+			helpItems = []string{
+				"space: play/pause", "n/p: next/prev station",
+				"+/-: volume", "↑↓: navigate stations",
+				"enter: play station", "tab: switch mode",
+				"t: start/stop pomodoro", "T: pause pomodoro",
+				"s: skip phase", "?: toggle help", "q: quit",
+			}
+		} else {
+			helpItems = []string{
+				"space: play/pause", "n: next", "p: prev",
+				"+/-: volume", "l: loop", "↑↓: navigate",
+				"enter: play track", "tab: switch mode",
+				"t: start/stop pomodoro", "T: pause pomodoro",
+				"s: skip phase", "?: toggle help", "q: quit",
+			}
 		}
 		return "\n" + helpStyle.Render("  "+strings.Join(helpItems, " │ "))
 	}

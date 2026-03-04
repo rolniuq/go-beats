@@ -8,6 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/quynh-vo/go-beats/internal/audio"
+	"github.com/quynh-vo/go-beats/internal/radio"
 	"github.com/quynh-vo/go-beats/internal/ui"
 )
 
@@ -20,18 +21,9 @@ func main() {
 		musicDir = os.Args[1]
 	}
 
-	// Resolve to absolute path
 	absDir, err := filepath.Abs(musicDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error resolving path: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Ensure music directory exists
-	if _, err := os.Stat(absDir); os.IsNotExist(err) {
-		fmt.Fprintf(os.Stderr, "Music directory not found: %s\n", absDir)
-		fmt.Println("Create a 'music' directory and add some .mp3 files!")
-		fmt.Println("Usage: go-beats [music-directory]")
 		os.Exit(1)
 	}
 
@@ -43,17 +35,24 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Initialize radio player
+	radioPlayer := radio.NewPlayer()
+
 	// Scan music directory
-	if err := engine.ScanDirectory(absDir); err != nil {
-		fmt.Fprintf(os.Stderr, "Error scanning music: %v\n", err)
-		fmt.Printf("Add .mp3 files to: %s\n", absDir)
-		os.Exit(1)
+	if _, err := os.Stat(absDir); os.IsNotExist(err) {
+		fmt.Printf("Music directory not found: %s\n", absDir)
+		fmt.Println("Note: You can use --radio flag to listen to internet radio!")
+	} else {
+		if err := engine.ScanDirectory(absDir); err != nil {
+			fmt.Fprintf(os.Stderr, "Error scanning music: %v\n", err)
+			fmt.Printf("Add .mp3 files to: %s\n", absDir)
+		} else {
+			fmt.Printf("📂 Found %d tracks in %s\n", engine.TrackCount(), absDir)
+		}
 	}
 
-	fmt.Printf("📂 Found %d tracks in %s\n", engine.TrackCount(), absDir)
-
-	// Create and run TUI
-	model := ui.NewModel(engine)
+	// Run TUI
+	model := ui.NewModel(engine, radioPlayer)
 	p := tea.NewProgram(model, tea.WithAltScreen())
 
 	if _, err := p.Run(); err != nil {
@@ -63,5 +62,6 @@ func main() {
 
 	// Cleanup
 	engine.Stop()
+	radioPlayer.Stop()
 	fmt.Println("\n👋 Thanks for chilling with go-beats!")
 }
