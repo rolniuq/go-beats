@@ -1,0 +1,18 @@
+# Binary
+go-beats
+
+# Music files (users bring their own)
+music/*.mp3
+music/*.wav
+music/*.ogg
+music/*.flac
+!music/.gitkeep
+
+# OS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

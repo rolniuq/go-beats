@@ -1,0 +1,139 @@
+# https://taskfile.dev
+
+version: "3"
+
+vars:
+  APP_NAME: go-beats
+  MAIN_PKG: ./cmd/main.go
+  MUSIC_DIR: ./music
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list-all
+
+  # ── Development ──────────────────────────────────────────────────────────
+
+  run:
+    desc: Build and run go-beats
+    deps: [build]
+    cmds:
+      - ./{{.APP_NAME}} {{.MUSIC_DIR}}
+
+  dev:
+    desc: Run with go run (no binary)
+    cmds:
+      - go run {{.MAIN_PKG}} {{.MUSIC_DIR}}
+
+  build:
+    desc: Build the binary for current platform
+    cmds:
+      - go build -o {{.APP_NAME}} {{.MAIN_PKG}}
+    sources:
+      - "**/*.go"
+      - go.mod
+      - go.sum
+    generates:
+      - "{{.APP_NAME}}"
+
+  # ── Code Quality ────────────────────────────────────────────────────────
+
+  fmt:
+    desc: Format all Go source files
+    cmds:
+      - go fmt ./...
+
+  vet:
+    desc: Run go vet
+    cmds:
+      - go vet ./...
+
+  lint:
+    desc: Run golangci-lint (install with brew install golangci-lint)
+    cmds:
+      - golangci-lint run ./...
+
+  test:
+    desc: Run all tests
+    cmds:
+      - go test -v ./...
+
+  test-cover:
+    desc: Run tests with coverage report
+    cmds:
+      - go test -coverprofile=coverage.out ./...
+      - go tool cover -html=coverage.out -o coverage.html
+      - echo "Coverage report created at coverage.html"
+
+  check:
+    desc: Run all quality checks (fmt, vet, test)
+    cmds:
+      - task: fmt
+      - task: vet
+      - task: test
+
+  # ── Dependencies ────────────────────────────────────────────────────────
+
+  deps:
+    desc: Download and tidy dependencies
+    cmds:
+      - go mod download
+      - go mod tidy
+
+  deps-update:
+    desc: Update all dependencies to latest
+    cmds:
+      - go get -u ./...
+      - go mod tidy
+
+  # ── Music ───────────────────────────────────────────────────────────────
+
+  music-gen:
+    desc: Generate sample test tracks (requires ffmpeg)
+    preconditions:
+      - sh: which ffmpeg
+        msg: "ffmpeg is required. Install with: brew install ffmpeg"
+    cmds:
+      - mkdir -p {{.MUSIC_DIR}}
+      - >-
+        ffmpeg -y -f lavfi
+        -i "sine=frequency=220:duration=30"
+        -i "sine=frequency=261:duration=30"
+        -i "sine=frequency=329:duration=30"
+        -filter_complex "[0][1][2]amix=inputs=3:duration=longest,lowpass=f=800,volume=0.5"
+        -t 30 -b:a 128k {{.MUSIC_DIR}}/ambient-chill.mp3
+      - >-
+        ffmpeg -y -f lavfi
+        -i "sine=frequency=261:duration=30"
+        -i "sine=frequency=329:duration=30"
+        -i "sine=frequency=392:duration=30"
+        -filter_complex "[0][1][2]amix=inputs=3:duration=longest,lowpass=f=600,volume=0.4"
+        -t 30 -b:a 128k {{.MUSIC_DIR}}/dreamy-focus.mp3
+      - echo "Generated sample tracks in {{.MUSIC_DIR}}/"
+
+  # ── Build Variants ─────────────────────────────────────────────────────
+
+  build-all:
+    desc: Cross-compile for macOS (arm64 + amd64) and Linux
+    cmds:
+      - mkdir -p dist
+      - GOOS=darwin GOARCH=arm64 go build -o dist/{{.APP_NAME}}-darwin-arm64 {{.MAIN_PKG}}
+      - GOOS=darwin GOARCH=amd64 go build -o dist/{{.APP_NAME}}-darwin-amd64 {{.MAIN_PKG}}
+      - GOOS=linux GOARCH=amd64 go build -o dist/{{.APP_NAME}}-linux-amd64 {{.MAIN_PKG}}
+      - echo "Binaries in dist/"
+
+  install:
+    desc: Install go-beats to $GOPATH/bin
+    cmds:
+      - go install ./cmd/
+
+  # ── Cleanup ─────────────────────────────────────────────────────────────
+
+  clean:
+    desc: Remove build artifacts
+    cmds:
+      - rm -f {{.APP_NAME}}
+      - rm -rf dist/
+      - rm -f coverage.out coverage.html
+      - echo "Cleaned!"
