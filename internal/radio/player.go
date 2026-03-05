@@ -3,6 +3,7 @@ package radio
 import (
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -204,7 +205,13 @@ func (p *Player) connectWithRetry(station Station) {
 func (p *Player) connectAndPlay(station Station) error {
 	// Create HTTP request
 	client := &http.Client{
-		Timeout: 15 * time.Second,
+		Transport: &http.Transport{
+			DialContext: (&net.Dialer{
+				Timeout: 15 * time.Second,
+			}).DialContext,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ResponseHeaderTimeout: 10 * time.Second,
+		},
 	}
 
 	req, err := http.NewRequest("GET", station.URL, nil)
