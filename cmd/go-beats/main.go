@@ -14,6 +14,13 @@ import (
 	"github.com/rolniuq/go-beats/internal/ui"
 )
 
+// Set by GoReleaser ldflags at build time
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
+
 func main() {
 	fmt.Println("🎵 Starting go-beats...")
 
@@ -21,7 +28,13 @@ func main() {
 	radioModeFlag := flag.Bool("radio", false, "Start directly in radio mode")
 	stationIdxFlag := flag.Int("station", -1, "Auto-play station index (implies --radio)")
 	listStationsFlag := flag.Bool("list-stations", false, "List available radio stations and exit")
+	versionFlag := flag.Bool("version", false, "Print version and exit")
 	flag.Parse()
+
+	if *versionFlag {
+		fmt.Printf("go-beats %s (commit: %s, built: %s)\n", version, commit, date)
+		return
+	}
 
 	radioPlayer := radio.NewPlayer()
 

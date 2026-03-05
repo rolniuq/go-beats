@@ -21,7 +21,7 @@
 ## Features
 
 - **Local MP3 Playback** — Play your own `.mp3` files with progress bar, loop, and auto-advance
-- **Internet Radio** — 10 curated lofi/ambient/synthwave stations, always streaming
+- **Internet Radio** — 11 curated lofi/ambient/synthwave stations, always streaming
 - **Pomodoro Timer** — Built-in 25/5/15 focus timer that runs alongside your music
 - **Beautiful TUI** — Animated audio visualizer, Rosé Pine color theme, full keyboard control
 - **Auto-Reconnect** — Radio streams reconnect automatically on failure (3 retries with exponential backoff)
@@ -33,11 +33,28 @@
 
 ### Prerequisites
 
-- **Go 1.25+**
-- **[Task](https://taskfile.dev/)** (task runner) — `brew install go-task`
+- **Go 1.25+** (for `go install`)
+- **[Task](https://taskfile.dev/)** (task runner, for development) — `brew install go-task`
 - **ffmpeg** (optional, for generating sample tracks) — `brew install ffmpeg`
 
-### Install & Run
+## Install
+
+### Via Go (requires Go 1.25+)
+
+```bash
+go install github.com/rolniuq/go-beats/cmd/go-beats@latest
+```
+
+### Via GitHub Releases
+
+Download the latest binary from [Releases](https://github.com/rolniuq/go-beats/releases), extract, and run:
+
+```bash
+tar -xzf go-beats_*.tar.gz
+./go-beats --radio
+```
+
+### From Source
 
 ```bash
 # Clone the repo
@@ -71,6 +88,7 @@ go run ./cmd/go-beats ./music
 | `--radio` | Start directly in radio mode |
 | `--station <index>` | Auto-play a specific station (implies `--radio`) |
 | `--list-stations` | List all available radio stations and exit |
+| `--version` | Print version and exit |
 | `[path]` | Music directory path (default: `./music`) |
 
 ### Examples
