@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -80,10 +81,20 @@ func main() {
 	} else {
 		if err := engine.ScanDirectory(absDir); err != nil {
 			if !startInRadio {
-				fmt.Fprintf(os.Stderr, "Error scanning music: %v\n", err)
-				fmt.Printf("Add .mp3 files to: %s\n", absDir)
-				fmt.Println("Or run with --radio to use internet stations.")
-				os.Exit(1)
+				hasMP3, scanErr := hasMP3Files(absDir)
+				if scanErr != nil {
+					fmt.Fprintf(os.Stderr, "Error scanning music: %v\n", err)
+					os.Exit(1)
+				}
+
+				if !hasMP3 {
+					fmt.Printf("No local tracks found in %s\n", absDir)
+					fmt.Println("Starting in radio mode. Use --list-stations to browse stations.")
+					startInRadio = true
+				} else {
+					fmt.Fprintf(os.Stderr, "Error scanning music: %v\n", err)
+					os.Exit(1)
+				}
 			}
 		} else {
 			fmt.Printf("📂 Found %d tracks in %s\n", engine.TrackCount(), absDir)
@@ -113,4 +124,22 @@ func main() {
 	engine.Stop()
 	radioPlayer.Stop()
 	fmt.Println("\n👋 Thanks for chilling with go-beats!")
+}
+
+func hasMP3Files(dir string) (bool, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return false, err
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		if strings.EqualFold(filepath.Ext(entry.Name()), ".mp3") {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
