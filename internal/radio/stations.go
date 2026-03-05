@@ -31,6 +31,12 @@ func DefaultStations() []Station {
 			Description: "Box Lofi - 24/7 lofi beats",
 		},
 		{
+			Name:        "LofiRadio24",
+			URL:         "https://stream.zeno.fm/0r0xa792kwzuv",
+			Genre:       "lofi hip-hop",
+			Description: "24/7 lofi hip hop radio - relaxing beats to study and chill",
+		},
+		{
 			Name:        "Nightride FM",
 			URL:         "https://stream.nightride.fm/nightride.m4a",
 			Genre:       "synthwave",

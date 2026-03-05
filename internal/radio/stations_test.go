@@ -93,3 +93,24 @@ func TestStationStruct(t *testing.T) {
 		t.Errorf("Description = %v, want %v", station.Description, "Test description")
 	}
 }
+
+func TestDefaultStationsIncludesLofiRadio24(t *testing.T) {
+	stations := DefaultStations()
+
+	for _, station := range stations {
+		if station.Name == "LofiRadio24" {
+			if station.URL != "https://stream.zeno.fm/0r0xa792kwzuv" {
+				t.Errorf("LofiRadio24 URL = %q, want %q", station.URL, "https://stream.zeno.fm/0r0xa792kwzuv")
+			}
+			if station.Genre != "lofi hip-hop" {
+				t.Errorf("LofiRadio24 genre = %q, want %q", station.Genre, "lofi hip-hop")
+			}
+			if station.Description != "24/7 lofi hip hop radio - relaxing beats to study and chill" {
+				t.Errorf("LofiRadio24 description = %q, want %q", station.Description, "24/7 lofi hip hop radio - relaxing beats to study and chill")
+			}
+			return
+		}
+	}
+
+	t.Fatal("LofiRadio24 station not found")
+}
