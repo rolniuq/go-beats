@@ -11,9 +11,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/quynh-vo/go-beats/internal/audio"
-	"github.com/quynh-vo/go-beats/internal/pomodoro"
-	"github.com/quynh-vo/go-beats/internal/radio"
+	"github.com/rolniuq/go-beats/internal/audio"
+	"github.com/rolniuq/go-beats/internal/pomodoro"
+	"github.com/rolniuq/go-beats/internal/radio"
 )
 
 // ── Messages ────────────────────────────────────────────────────────────────

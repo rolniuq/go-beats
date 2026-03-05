@@ -9,9 +9,9 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/quynh-vo/go-beats/internal/audio"
-	"github.com/quynh-vo/go-beats/internal/radio"
-	"github.com/quynh-vo/go-beats/internal/ui"
+	"github.com/rolniuq/go-beats/internal/audio"
+	"github.com/rolniuq/go-beats/internal/radio"
+	"github.com/rolniuq/go-beats/internal/ui"
 )
 
 func main() {
