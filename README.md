@@ -113,20 +113,21 @@ go run ./cmd/main.go ./music
 
 ## Radio Stations
 
-10 curated stations for coding, studying, and chilling:
+11 curated stations for coding, studying, and chilling:
 
 | # | Station | Genre |
 |---|---------|-------|
 | 0 | Lofi Girl | lofi hip-hop |
 | 1 | Chillhop | chillhop |
 | 2 | Box Lofi | lofi |
-| 3 | Nightride FM | synthwave |
-| 4 | Plaza One | vaporwave |
-| 5 | SomaFM Groove Salad | ambient/downtempo |
-| 6 | SomaFM DEF CON | electronic |
-| 7 | SomaFM Drone Zone | ambient/drone |
-| 8 | SomaFM Deep Space One | space ambient |
-| 9 | SomaFM Lush | electronic/female vocal |
+| 3 | LofiRadio24 | lofi hip-hop |
+| 4 | Nightride FM | synthwave |
+| 5 | Plaza One | vaporwave |
+| 6 | SomaFM Groove Salad | ambient/downtempo |
+| 7 | SomaFM DEF CON | electronic |
+| 8 | SomaFM Drone Zone | ambient/drone |
+| 9 | SomaFM Deep Space One | space ambient |
+| 10 | SomaFM Lush | electronic/female vocal |
 
 ---
 
