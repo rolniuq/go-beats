@@ -152,9 +152,13 @@ func NewModel(engine *audio.Engine, radioPlayer *radio.Player) Model {
 		vizBars:     make([]float64, 30),
 	}
 
-	// When a track ends, send a message
-	engine.OnTrackEnd = func() {
-		// This runs in the audio goroutine, need to handle carefully
+	// Track advancement uses polling in Update() tick - no callback needed
+
+	// Wire up radio auto-advance callback
+	if radioPlayer != nil {
+		radioPlayer.OnStationUnavailable = func(station radio.Station) {
+			// Status will be shown via the TUI's periodic check
+		}
 	}
 
 	return m
