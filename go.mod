@@ -1,4 +1,4 @@
-module github.com/quynh-vo/go-beats
+module github.com/rolniuq/go-beats
 
 go 1.25.3
 
