@@ -4,7 +4,7 @@ version: "3"
 
 vars:
   APP_NAME: go-beats
-  MAIN_PKG: ./cmd/main.go
+  MAIN_PKG: ./cmd/go-beats
   MUSIC_DIR: ./music
 
 tasks:
@@ -126,7 +126,7 @@ tasks:
   install:
     desc: Install go-beats to $GOPATH/bin
     cmds:
-      - go install ./cmd/
+      - go install ./cmd/go-beats/
 
   # ── Cleanup ─────────────────────────────────────────────────────────────
 
