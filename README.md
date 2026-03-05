@@ -57,7 +57,7 @@ task run
 ### Or run directly with Go
 
 ```bash
-go run ./cmd/main.go ./music
+go run ./cmd/go-beats ./music
 ```
 
 ---
