@@ -40,6 +40,10 @@ type Player struct {
 	maxRetries     int
 	retryChan      chan struct{}
 	stopReconnect  chan struct{}
+
+	// Auto-advance state
+	consecutiveFailures  int
+	OnStationUnavailable func(station Station)
 }
 
 // NewPlayer creates a new radio player with default stations
@@ -159,23 +163,38 @@ func (p *Player) connectWithRetry(station Station) {
 			}
 		} else {
 			p.reconnectCount = 0
+			p.consecutiveFailures = 0
 		}
 		p.mu.Unlock()
 
 		// Check for manual retry request
 		if p.reconnectCount >= p.maxRetries {
-			select {
-			case <-p.retryChan:
+			// Auto-advance: try next station
+			p.mu.Lock()
+			p.consecutiveFailures++
+			callback := p.OnStationUnavailable
+			currentIdx := p.currentStation
+			p.mu.Unlock()
+
+			if callback != nil {
+				callback(station)
+			}
+
+			// Try next station
+			nextIdx := (currentIdx + 1) % len(p.stations)
+			if p.consecutiveFailures < len(p.stations) {
 				p.mu.Lock()
 				p.reconnectCount = 0
-				p.err = nil
 				p.connecting = true
+				p.currentStation = nextIdx
 				p.mu.Unlock()
+				station = p.stations[nextIdx]
 				backoff = 2 * time.Second
 				continue
-			case <-p.stopReconnect:
-				return
 			}
+
+			// All stations failed
+			return
 		}
 
 		return
@@ -425,6 +444,13 @@ func (p *Player) MaxRetries() int {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return p.maxRetries
+}
+
+// ConsecutiveFailures returns the number of consecutive station failures
+func (p *Player) ConsecutiveFailures() int {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.consecutiveFailures
 }
 
 // CheckStream checks if the stream is still active and attempts reconnection if not

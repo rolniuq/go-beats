@@ -16,3 +16,6 @@ music/*.flac
 .vscode/
 *.swp
 *.swo
+
+# Task runner
+.task/
