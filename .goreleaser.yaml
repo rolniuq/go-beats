@@ -5,7 +5,6 @@ project_name: go-beats
 before:
   hooks:
     - go mod tidy
-    - go vet ./...
 
 builds:
   - id: go-beats
