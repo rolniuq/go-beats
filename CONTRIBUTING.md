@@ -4,6 +4,86 @@
 
 ---
 
+## 🎫 Ticket Pickup Rules
+
+> **Every dev must follow these rules when picking up a ticket. No exceptions.**
+
+### Step 1: Pick a Ticket
+
+1. Go to the [Issues board](https://github.com/rolniuq/go-beats/issues) and find an **open, unassigned** ticket from the current sprint milestone
+2. **Priority order**: Pick `priority:high` tickets before `priority:medium` or `priority:low`
+3. **Only pick ONE ticket at a time** — finish your current ticket before picking a new one
+4. **Do NOT pick a ticket that is already assigned to someone else**
+
+### Step 2: Assign Yourself
+
+1. **Assign yourself** to the ticket on GitHub (right sidebar → "Assignees")
+2. This tells the team the ticket is taken — no one else should work on it
+
+### Step 3: Create Your Branch
+
+1. **Always branch from latest `main`**:
+   ```bash
+   git checkout main
+   git pull origin main
+   git checkout -b <type>/ticket-<number>-<short-description>
+   ```
+2. Branch name **must include the ticket number** (see Branch Naming Convention below)
+
+### Step 4: Work on the Ticket
+
+1. Read the ticket description carefully — follow the **Acceptance Criteria**
+2. If anything is unclear, **ask the tech lead before coding** — don't guess
+3. Keep your changes **scoped to the ticket** — don't fix unrelated things in the same branch
+4. Make small, meaningful commits as you go (see commit rules below)
+
+### Step 5: Self-Check Before PR
+
+Before creating a PR, verify:
+1. ✅ `task check` passes (fmt + vet + test)
+2. ✅ All **Acceptance Criteria** from the ticket are met
+3. ✅ No hardcoded values, secrets, or debug code left behind
+4. ✅ Code is readable and commented where needed
+5. ✅ You've tested manually (follow "How to Test" if provided in the ticket)
+
+### Step 6: Create PR & Link the Ticket
+
+1. Push your branch and create a PR following the PR template below
+2. **Must include** `Closes #<ticket-number>` in the PR body — this auto-closes the ticket when merged
+3. **Assign tech lead as reviewer**
+4. Wait for review — **do NOT merge your own PR**
+
+### Step 7: Address Review Feedback
+
+1. If changes are requested → fix them, push to the **same branch**, and re-request review
+2. **Do NOT create a new PR** for review fixes — keep everything in one PR
+3. Respond to every review comment — either fix it or explain why not
+
+### Step 8: After Merge
+
+1. Tech lead merges the PR (squash merge)
+2. Delete your feature branch:
+   ```bash
+   git checkout main
+   git pull origin main
+   git branch -d <your-branch-name>
+   ```
+3. Go back to **Step 1** and pick your next ticket
+
+### ❌ Common Mistakes to Avoid
+
+| Mistake | Why it's bad |
+|---------|-------------|
+| Working on a ticket without assigning yourself | Other devs might start the same work → wasted effort |
+| Picking multiple tickets at once | Context switching = slower delivery, more merge conflicts |
+| Skipping `task check` before pushing | Broken builds block the whole team |
+| Making changes outside the ticket scope | Makes PRs hard to review and can introduce bugs |
+| Forgetting `Closes #N` in PR body | Ticket stays open even after merge → confusing board |
+| Merging your own PR | Violates code review process — always wait for tech lead |
+| Pushing directly to `main` | Branch protection will reject it anyway |
+
+---
+
 ## 📐 Branch Naming Convention
 
 ```
