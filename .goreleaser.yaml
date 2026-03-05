@@ -7,17 +7,31 @@ before:
     - go mod tidy
 
 builds:
-  - id: go-beats
+  - id: go-beats-darwin
     main: ./cmd/go-beats
     binary: go-beats
     env:
       - CGO_ENABLED=0
     goos:
       - darwin
-      - linux
     goarch:
       - amd64
       - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.ShortCommit}}
+      - -X main.date={{.Date}}
+
+  - id: go-beats-linux
+    main: ./cmd/go-beats
+    binary: go-beats
+    env:
+      - CGO_ENABLED=1
+    goos:
+      - linux
+    goarch:
+      - amd64
     ldflags:
       - -s -w
       - -X main.version={{.Version}}
