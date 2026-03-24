@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleName</key>
+    <string>Go-Beats</string>
+    <key>CFBundleExecutable</key>
+    <string>Go-Beats</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.rolniuq.go-beats</string>
+    <key>CFBundleVersion</key>
+    <string>1.0.0</string>
+    <key>CFBundleGetInfoString</key>
+    <string>Lofi beats to relax/study to</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+    <key>CFBundleIconFile</key>
+    <string>iconfile</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>10.15.0</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.music</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>Copyright 2024 rolniuq</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Go-Beats needs audio access to play music.</string>
+    <key>LSUIElement</key>
+    <false/>
+</dict>
+</plist>

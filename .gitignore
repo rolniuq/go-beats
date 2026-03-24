@@ -1,5 +1,6 @@
 # Binary
 /go-beats
+/go-beats-desktop
 
 # Music files (users bring their own)
 music/*.mp3
@@ -19,3 +20,4 @@ music/*.flac
 
 # Task runner
 .task/
+dist

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "go-beats",
+  "outputfilename": "Go-Beats",
+  "frontend:install": "",
+  "frontend:build": "",
+  "frontend:dev:watcher": "",
+  "frontend:dev:serverUrl": "",
+  "assetdir": "./desktop/frontend/dist",
+  "wailsjsdir": "./desktop/frontend/dist",
+  "author": {
+    "name": "rolniuq",
+    "email": ""
+  },
+  "info": {
+    "companyName": "go-beats",
+    "productName": "Go-Beats",
+    "productVersion": "1.0.0",
+    "copyright": "Copyright 2024",
+    "comments": "Lofi beats to relax/study to"
+  }
+}

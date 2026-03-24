@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1f1d2e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#191724;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="bars" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" style="stop-color:#c4a7e7;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#9ccfd8;stop-opacity:1" />
+      <stop offset="80%" style="stop-color:#f6c177;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#eb6f92;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Background rounded square -->
+  <rect x="32" y="32" width="960" height="960" rx="180" ry="180" fill="url(#bg)" stroke="#c4a7e7" stroke-width="8"/>
+  <!-- Visualizer bars -->
+  <rect x="200" y="480" width="48" height="240" rx="8" fill="url(#bars)" opacity="0.9"/>
+  <rect x="268" y="380" width="48" height="340" rx="8" fill="url(#bars)" opacity="0.9"/>
+  <rect x="336" y="320" width="48" height="400" rx="8" fill="url(#bars)" opacity="0.9"/>
+  <rect x="404" y="260" width="48" height="460" rx="8" fill="url(#bars)" opacity="0.9"/>
+  <rect x="472" y="200" width="48" height="520" rx="8" fill="url(#bars)" opacity="0.9"/>
+  <rect x="540" y="280" width="48" height="440" rx="8" fill="url(#bars)" opacity="0.9"/>
+  <rect x="608" y="340" width="48" height="380" rx="8" fill="url(#bars)" opacity="0.9"/>
+  <rect x="676" y="420" width="48" height="300" rx="8" fill="url(#bars)" opacity="0.9"/>
+  <rect x="744" y="500" width="48" height="220" rx="8" fill="url(#bars)" opacity="0.9"/>
+  <!-- Text -->
+  <text x="512" y="860" text-anchor="middle" font-family="monospace" font-weight="bold" font-size="80" fill="#e0def4">GO-BEATS</text>
+</svg>

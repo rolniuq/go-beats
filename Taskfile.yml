@@ -128,6 +128,47 @@ tasks:
     cmds:
       - go install ./cmd/go-beats/
 
+  # ── Desktop App (macOS) ────────────────────────────────────────────────
+
+  desktop-build:
+    desc: Build Go-Beats desktop app for macOS (Apple Silicon)
+    cmds:
+      - mkdir -p dist
+      - CGO_LDFLAGS="-framework UniformTypeIdentifiers" go build -tags desktop,production -o dist/Go-Beats ./cmd/go-beats-desktop
+      - echo "Desktop binary built at dist/Go-Beats"
+
+  desktop-app:
+    desc: Package Go-Beats as macOS .app bundle
+    deps: [desktop-build]
+    cmds:
+      - mkdir -p "dist/Go-Beats.app/Contents/MacOS"
+      - mkdir -p "dist/Go-Beats.app/Contents/Resources"
+      - cp build/darwin/Info.plist "dist/Go-Beats.app/Contents/"
+      - cp dist/Go-Beats "dist/Go-Beats.app/Contents/MacOS/"
+      - cp build/darwin/iconfile.icns "dist/Go-Beats.app/Contents/Resources/"
+      - echo "macOS app created at dist/Go-Beats.app"
+      - 'echo "Run with: open dist/Go-Beats.app"'
+
+  desktop-run:
+    desc: Build and run Go-Beats desktop app
+    deps: [desktop-app]
+    cmds:
+      - open dist/Go-Beats.app
+
+  desktop-install:
+    desc: Install Go-Beats.app to /Applications
+    deps: [desktop-app]
+    cmds:
+      - rm -rf "/Applications/Go-Beats.app"
+      - cp -R dist/Go-Beats.app /Applications/
+      - echo "Go-Beats installed to /Applications/Go-Beats.app"
+      - echo "You can now find it in Launchpad or Spotlight."
+
+  desktop-dev:
+    desc: Run desktop app in dev mode (go run)
+    cmds:
+      - CGO_LDFLAGS="-framework UniformTypeIdentifiers" go run -tags "desktop dev" ./cmd/go-beats-desktop -assetdir ./desktop/frontend/dist
+
   # ── Cleanup ─────────────────────────────────────────────────────────────
 
   clean:
