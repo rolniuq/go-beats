@@ -39,7 +39,15 @@
 
 ## Install
 
-### Via Go (requires Go 1.25+)
+### macOS Desktop App (one command)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/rolniuq/go-beats/main/install.sh | bash
+```
+
+This downloads the latest release, installs **Go-Beats.app** to `/Applications`, and makes it available in Launchpad and Spotlight.
+
+### Via Go (TUI version, requires Go 1.25+)
 
 ```bash
 go install github.com/rolniuq/go-beats/cmd/go-beats@latest
@@ -50,8 +58,14 @@ go install github.com/rolniuq/go-beats/cmd/go-beats@latest
 Download the latest binary from [Releases](https://github.com/rolniuq/go-beats/releases), extract, and run:
 
 ```bash
+# TUI (terminal)
 tar -xzf go-beats_*.tar.gz
 ./go-beats --radio
+
+# Desktop app (macOS)
+tar -xzf Go-Beats_*_darwin_arm64.app.tar.gz
+cp -R Go-Beats.app /Applications/
+open -a Go-Beats
 ```
 
 ### From Source
@@ -67,14 +81,21 @@ task deps
 # Generate sample tracks (optional)
 task music-gen
 
-# Build and run
+# Build and run (TUI)
 task run
+
+# Build and install desktop app to /Applications
+task desktop-install
 ```
 
 ### Or run directly with Go
 
 ```bash
+# TUI
 go run ./cmd/go-beats ./music
+
+# Desktop (dev mode)
+task desktop-dev
 ```
 
 ---
@@ -173,6 +194,11 @@ Run `task` to see all commands:
 | `task dev` | Run with `go run` (no binary) |
 | `task build` | Build binary for current platform |
 | `task build-all` | Cross-compile for macOS (arm64 + amd64) and Linux |
+| `task desktop-build` | Build Go-Beats desktop binary |
+| `task desktop-app` | Package as macOS .app bundle |
+| `task desktop-run` | Build and run desktop app |
+| `task desktop-install` | Install Go-Beats.app to /Applications |
+| `task desktop-dev` | Run desktop app in dev mode |
 | `task check` | Run all quality checks (fmt + vet + test) |
 | `task test` | Run all tests |
 | `task test-cover` | Run tests with coverage report |
@@ -192,22 +218,31 @@ Run `task` to see all commands:
 ```
 go-beats/
 ├── cmd/
-│   └── main.go                 # Entry point — CLI flags, wiring
+│   ├── go-beats/
+│   │   └── main.go              # TUI entry point — CLI flags, wiring
+│   └── go-beats-desktop/
+│       └── main.go              # Desktop (Wails) entry point
+├── desktop/
+│   ├── main.go                  # Wails app bootstrap
+│   ├── app.go                   # Desktop backend (state, controls)
+│   └── frontend/dist/           # HTML/CSS/JS frontend
 ├── internal/
 │   ├── audio/
-│   │   └── engine.go           # Local MP3 playback engine
+│   │   └── engine.go            # Local MP3 playback engine
 │   ├── radio/
-│   │   ├── player.go           # Internet radio HTTP stream player
-│   │   ├── stations.go         # Curated station registry
-│   │   └── stations_test.go    # Station tests
+│   │   ├── player.go            # Internet radio HTTP stream player
+│   │   ├── stations.go          # Curated station registry
+│   │   └── stations_test.go     # Station tests
 │   ├── pomodoro/
-│   │   ├── timer.go            # Pomodoro timer logic
-│   │   └── timer_test.go       # Timer tests
+│   │   ├── timer.go             # Pomodoro timer logic
+│   │   └── timer_test.go        # Timer tests
 │   └── ui/
-│       └── tui.go              # Bubbletea TUI (visualizer, controls, rendering)
-├── music/                      # Your .mp3 files go here
-├── Taskfile.yml                # Task runner config
-├── CONTRIBUTING.md             # Git workflow & PR guide
+│       └── tui.go               # Bubbletea TUI (visualizer, controls, rendering)
+├── build/darwin/                 # macOS .app bundle assets (Info.plist, icons)
+├── music/                       # Your .mp3 files go here
+├── install.sh                   # One-command installer for macOS
+├── Taskfile.yml                 # Task runner config
+├── CONTRIBUTING.md              # Git workflow & PR guide
 └── go.mod
 ```
 
@@ -219,6 +254,7 @@ go-beats/
 |-----------|---------|
 | TUI Framework | [Bubbletea](https://github.com/charmbracelet/bubbletea) |
 | TUI Styling | [Lip Gloss](https://github.com/charmbracelet/lipgloss) |
+| Desktop GUI | [Wails v2](https://wails.io/) |
 | Audio Playback | [Beep](https://github.com/gopxl/beep) |
 | MP3 Decoding | [go-mp3](https://github.com/hajimehoshi/go-mp3) |
 | Audio Output | [Oto](https://github.com/ebitengine/oto) |
