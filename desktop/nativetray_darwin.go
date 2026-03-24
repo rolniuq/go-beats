@@ -1,3 +1,5 @@
+//go:build desktop && darwin
+
 package desktop
 
 // NativeTray is a no-op placeholder.
