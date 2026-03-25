@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/rolniuq/go-beats/internal/audio"
+	"github.com/rolniuq/go-beats/internal/notification"
 	"github.com/rolniuq/go-beats/internal/pomodoro"
 	"github.com/rolniuq/go-beats/internal/radio"
 )
@@ -96,6 +97,16 @@ func (a *App) Startup(ctx context.Context) {
 
 	// Initialize pomodoro timer
 	a.pomo = pomodoro.NewTimer(pomodoro.DefaultConfig())
+
+	// Play notification sound when a pomodoro phase ends
+	a.pomo.OnPhaseEnd = func(completed pomodoro.Phase, next pomodoro.Phase) {
+		switch completed {
+		case pomodoro.PhaseWork:
+			go notification.PlayFocusEnd()
+		case pomodoro.PhaseShortBreak, pomodoro.PhaseLongBreak:
+			go notification.PlayBreakEnd()
+		}
+	}
 
 	// Try to find music directory
 	a.musicDir = "./music"

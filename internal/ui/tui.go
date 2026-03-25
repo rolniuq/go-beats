@@ -12,6 +12,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/rolniuq/go-beats/internal/audio"
+	"github.com/rolniuq/go-beats/internal/notification"
 	"github.com/rolniuq/go-beats/internal/pomodoro"
 	"github.com/rolniuq/go-beats/internal/radio"
 )
@@ -150,6 +151,16 @@ func NewModel(engine *audio.Engine, radioPlayer *radio.Player) Model {
 		mode:        ModeLocal,
 		pomo:        pomo,
 		vizBars:     make([]float64, 30),
+	}
+
+	// Play notification sound when a pomodoro phase ends
+	pomo.OnPhaseEnd = func(completed pomodoro.Phase, next pomodoro.Phase) {
+		switch completed {
+		case pomodoro.PhaseWork:
+			go notification.PlayFocusEnd()
+		case pomodoro.PhaseShortBreak, pomodoro.PhaseLongBreak:
+			go notification.PlayBreakEnd()
+		}
 	}
 
 	// Track advancement uses polling in Update() tick - no callback needed
