@@ -4,7 +4,7 @@ package nowplaying
 
 /*
 #cgo CFLAGS: -x objective-c
-#cgo LDFLAGS: -framework MediaPlayer
+#cgo LDFLAGS: -framework MediaPlayer -framework Cocoa
 #import <MediaPlayer/MediaPlayer.h>
 #import <Cocoa/Cocoa.h>
 
