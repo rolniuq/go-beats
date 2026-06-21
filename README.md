@@ -26,6 +26,7 @@
 - **Beautiful TUI** — Animated audio visualizer, Rosé Pine color theme, full keyboard control
 - **Auto-Reconnect** — Radio streams reconnect automatically on failure (3 retries with exponential backoff)
 - **Graceful Fallback** — No local music? App automatically starts in radio mode
+- **MCP Server** — Run in headless mode (`--mcp`) for AI coding agent integration via the Model Context Protocol
 
 ---
 
@@ -109,6 +110,7 @@ task desktop-dev
 | `--radio` | Start directly in radio mode |
 | `--station <index>` | Auto-play a specific station (implies `--radio`) |
 | `--list-stations` | List all available radio stations and exit |
+| `--mcp` | Run as MCP server over stdio (for AI agent integration) |
 | `--version` | Print version and exit |
 | `[path]` | Music directory path (default: `./music`) |
 
@@ -126,6 +128,9 @@ task desktop-dev
 
 # List all stations
 ./go-beats --list-stations
+
+# Run as MCP server (for opencode / AI agent integration)
+./go-beats --mcp
 ```
 
 ---
