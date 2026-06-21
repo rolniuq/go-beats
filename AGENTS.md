@@ -21,7 +21,7 @@ directory has no HTML/CSS/JS yet.
 | Audio Output     | Oto v3 (ebitengine)                                                 |
 | Task Runner      | [Task](https://taskfile.dev/) (Taskfile.yml)                        |
 
-**Go version:** 1.25.3
+**Go version:** 1.26.1
 
 ## Architecture
 
@@ -119,12 +119,33 @@ CLI flags: `--radio`, `--station <N>`, `--list-stations`, `--version`, `[path]`
 - **Desktop builds** need `CGO_LDFLAGS="-framework UniformTypeIdentifiers"`
   and build tag `desktop`.
 
+## Rules & Conventions
+
+### Code Patterns
+- Follow existing code style (no comments, use built-in `min`/`max`, same libs)
+- No new third-party dependencies without discussion
+- Bubbletea models get their own file in `internal/ui/`
+- Desktop-only code uses `//go:build desktop` tag
+- Shared helpers go in `internal/util/` (no duplication)
+- Prefer Go 1.21+ builtins over custom helpers
+
+### Before Every Push
+1. Run `task check` — fmt + vet + test must pass
+2. Run `go clean -cache` if build behavior seems stale
+3. Verify no build artifacts are staged (`dist/`, binaries, `coverage.out`)
+
+### Repository Hygiene
+- Do NOT commit: binaries, `dist/` contents, `coverage.*`, `.a` archives, IDE config
+- Desktop frontend build output (`desktop/frontend/dist/*`) is committed as
+  embed placeholder — only commit real assets after review
+- The `go-beats-desktop` binary is CGO-linked; always rebuild on macOS SDK updates
+
 ## Git Workflow
 
 - `main` is protected — all changes via feature branches → PR → squash merge
 - Branch naming: `<type>/ticket-<N>-<description>`
 - Commit format: `<type>(<scope>): <message>`
-- Run `task check` before pushing
+- Run `task check` + `task clean` before every push
 
 ## Known Limitations & Gotchas
 

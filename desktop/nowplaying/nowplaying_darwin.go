@@ -5,128 +5,109 @@ package nowplaying
 /*
 #cgo CFLAGS: -x objective-c
 #cgo LDFLAGS: -framework MediaPlayer -framework Cocoa
-#import <MediaPlayer/MediaPlayer.h>
+#include <stdlib.h>
 #import <Cocoa/Cocoa.h>
+#import <MediaPlayer/MediaPlayer.h>
 
-extern void goNowPlayingCommand(int command, double value);
-
-void nowplaying_setPlaying(const char* title, double duration) {
-    MPNowPlayingInfoCenter* center = [MPNowPlayingInfoCenter defaultCenter];
-    NSString* titleStr = [NSString stringWithUTF8String:title];
-    NSImage* appIcon = [NSImage imageNamed:@"AppIcon"];
-    if (appIcon == nil) {
-        appIcon = [NSImage imageNamed:@"NSApplicationIcon"];
-    }
-    MPMediaItemArtwork* artwork = nil;
-    if (appIcon) {
-        artwork = [[MPMediaItemArtwork alloc] initWithBoundsSize:appIcon.size
-                                                   requestHandler:^NSImage* (CGSize size) {
-            return appIcon;
-        }];
-    }
-    NSMutableDictionary* info = [NSMutableDictionary dictionary];
-    info[MPMediaItemPropertyTitle] = titleStr;
-    info[MPMediaItemPropertyArtist] = @"go-beats";
-    info[MPMediaItemPropertyAlbumTitle] = @"Lofi Beats";
-    info[MPNowPlayingInfoPropertyPlaybackRate] = @(1.0);
-    if (duration > 0) {
-        info[MPMediaItemPropertyPlaybackDuration] = @(duration);
-    }
-    if (artwork) {
-        info[MPMediaItemPropertyArtwork] = artwork;
-    }
-    center.nowPlayingInfo = info;
+void nowplaying_setPlaying(const char *title, double duration) {
+	@autoreleasepool {
+		MPNowPlayingInfoCenter *center = MPNowPlayingInfoCenter.defaultCenter;
+		NSString *t = [NSString stringWithUTF8String:title];
+		NSImage *icon = [NSImage imageNamed:@"AppIcon"] ?: [NSImage imageNamed:@"NSApplicationIcon"];
+		MPMediaItemArtwork *art = nil;
+		if (icon) {
+			art = [[MPMediaItemArtwork alloc] initWithBoundsSize:icon.size requestHandler:^NSImage*(CGSize s){ return icon; }];
+		}
+		NSMutableDictionary *info = [NSMutableDictionary dictionary];
+		info[MPMediaItemPropertyTitle] = t;
+		info[MPMediaItemPropertyArtist] = @"go-beats";
+		info[MPMediaItemPropertyAlbumTitle] = @"Lofi Beats";
+		info[MPNowPlayingInfoPropertyPlaybackRate] = @(1.0);
+		if (duration > 0) info[MPMediaItemPropertyPlaybackDuration] = @(duration);
+		if (art) info[MPMediaItemPropertyArtwork] = art;
+		center.nowPlayingInfo = info;
+	}
 }
 
-void nowplaying_setStation(const char* name) {
-    MPNowPlayingInfoCenter* center = [MPNowPlayingInfoCenter defaultCenter];
-    NSString* nameStr = [NSString stringWithUTF8String:name];
-    NSImage* appIcon = [NSImage imageNamed:@"AppIcon"];
-    if (appIcon == nil) {
-        appIcon = [NSImage imageNamed:@"NSApplicationIcon"];
-    }
-    MPMediaItemArtwork* artwork = nil;
-    if (appIcon) {
-        artwork = [[MPMediaItemArtwork alloc] initWithBoundsSize:appIcon.size
-                                                   requestHandler:^NSImage* (CGSize size) {
-            return appIcon;
-        }];
-    }
-    NSMutableDictionary* info = [NSMutableDictionary dictionary];
-    info[MPMediaItemPropertyTitle] = nameStr;
-    info[MPMediaItemPropertyArtist] = @"go-beats";
-    info[MPMediaItemPropertyAlbumTitle] = @"Radio";
-    info[MPNowPlayingInfoPropertyPlaybackRate] = @(1.0);
-    info[MPMediaItemPropertyPlaybackDuration] = @(-1);
-    if (artwork) {
-        info[MPMediaItemPropertyArtwork] = artwork;
-    }
-    center.nowPlayingInfo = info;
+void nowplaying_setStation(const char *name) {
+	@autoreleasepool {
+		MPNowPlayingInfoCenter *center = MPNowPlayingInfoCenter.defaultCenter;
+		NSString *n = [NSString stringWithUTF8String:name];
+		NSImage *icon = [NSImage imageNamed:@"AppIcon"] ?: [NSImage imageNamed:@"NSApplicationIcon"];
+		MPMediaItemArtwork *art = nil;
+		if (icon) {
+			art = [[MPMediaItemArtwork alloc] initWithBoundsSize:icon.size requestHandler:^NSImage*(CGSize s){ return icon; }];
+		}
+		NSMutableDictionary *info = [NSMutableDictionary dictionary];
+		info[MPMediaItemPropertyTitle] = n;
+		info[MPMediaItemPropertyArtist] = @"go-beats";
+		info[MPMediaItemPropertyAlbumTitle] = @"Radio";
+		info[MPNowPlayingInfoPropertyPlaybackRate] = @(1.0);
+		info[MPMediaItemPropertyPlaybackDuration] = @(-1);
+		if (art) info[MPMediaItemPropertyArtwork] = art;
+		center.nowPlayingInfo = info;
+	}
 }
 
-void nowplaying_setPaused() {
-    MPNowPlayingInfoCenter* center = [MPNowPlayingInfoCenter defaultCenter];
-    NSMutableDictionary* info = [center.nowPlayingInfo mutableCopy];
-    if (info) {
-        info[MPNowPlayingInfoPropertyPlaybackRate] = @(0.0);
-        center.nowPlayingInfo = info;
-    }
+void nowplaying_setPaused(void) {
+	@autoreleasepool {
+		MPNowPlayingInfoCenter *center = MPNowPlayingInfoCenter.defaultCenter;
+		NSMutableDictionary *info = [center.nowPlayingInfo mutableCopy];
+		if (info) {
+			info[MPNowPlayingInfoPropertyPlaybackRate] = @(0.0);
+			center.nowPlayingInfo = info;
+		}
+	}
 }
 
-void nowplaying_setStopped() {
-    [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = nil;
+void nowplaying_setStopped(void) {
+	MPNowPlayingInfoCenter.defaultCenter.nowPlayingInfo = nil;
 }
 
 void nowplaying_setProgress(double position) {
-    MPNowPlayingInfoCenter* center = [MPNowPlayingInfoCenter defaultCenter];
-    NSMutableDictionary* info = [center.nowPlayingInfo mutableCopy];
-    if (info) {
-        info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = @(position);
-        center.nowPlayingInfo = info;
-    }
+	@autoreleasepool {
+		MPNowPlayingInfoCenter *center = MPNowPlayingInfoCenter.defaultCenter;
+		NSMutableDictionary *info = [center.nowPlayingInfo mutableCopy];
+		if (info) {
+			info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = @(position);
+			center.nowPlayingInfo = info;
+		}
+	}
 }
 
-static void handleCommand(int command, double value) {
-    goNowPlayingCommand(command, value);
+extern void goNowPlayingCommand(int cmd, double val);
+
+void nowplaying_setCommandHandler(void) {
+	MPRemoteCommandCenter *cc = MPRemoteCommandCenter.sharedCommandCenter;
+	[cc.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *_Nonnull e){
+		goNowPlayingCommand(0, 0); return MPRemoteCommandHandlerStatusSuccess;
+	}];
+	[cc.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *_Nonnull e){
+		goNowPlayingCommand(1, 0); return MPRemoteCommandHandlerStatusSuccess;
+	}];
+	[cc.togglePlayPauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *_Nonnull e){
+		goNowPlayingCommand(2, 0); return MPRemoteCommandHandlerStatusSuccess;
+	}];
+	[cc.nextTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *_Nonnull e){
+		goNowPlayingCommand(3, 0); return MPRemoteCommandHandlerStatusSuccess;
+	}];
+	[cc.previousTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *_Nonnull e){
+		goNowPlayingCommand(4, 0); return MPRemoteCommandHandlerStatusSuccess;
+	}];
+	[cc.changePlaybackPositionCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *_Nonnull e){
+		goNowPlayingCommand(5, ((MPChangePlaybackPositionCommandEvent *)e).positionTime);
+		return MPRemoteCommandHandlerStatusSuccess;
+	}];
 }
 
-void nowplaying_setCommandHandler() {
-    MPRemoteCommandCenter* cmdCenter = [MPRemoteCommandCenter sharedCommandCenter];
-    [cmdCenter.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent* _Nonnull event) {
-        handleCommand(0, 0);
-        return MPRemoteCommandHandlerStatusSuccess;
-    }];
-    [cmdCenter.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent* _Nonnull event) {
-        handleCommand(1, 0);
-        return MPRemoteCommandHandlerStatusSuccess;
-    }];
-    [cmdCenter.togglePlayPauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent* _Nonnull event) {
-        handleCommand(2, 0);
-        return MPRemoteCommandHandlerStatusSuccess;
-    }];
-    [cmdCenter.nextTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent* _Nonnull event) {
-        handleCommand(3, 0);
-        return MPRemoteCommandHandlerStatusSuccess;
-    }];
-    [cmdCenter.previousTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent* _Nonnull event) {
-        handleCommand(4, 0);
-        return MPRemoteCommandHandlerStatusSuccess;
-    }];
-    [cmdCenter.changePlaybackPositionCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent* _Nonnull event) {
-        MPChangePlaybackPositionCommandEvent* posEvent = (MPChangePlaybackPositionCommandEvent*)event;
-        handleCommand(5, posEvent.positionTime);
-        return MPRemoteCommandHandlerStatusSuccess;
-    }];
-}
-
-void nowplaying_clearCommandHandler() {
-    MPRemoteCommandCenter* cmdCenter = [MPRemoteCommandCenter sharedCommandCenter];
-    [cmdCenter.playCommand removeTarget:nil];
-    [cmdCenter.pauseCommand removeTarget:nil];
-    [cmdCenter.togglePlayPauseCommand removeTarget:nil];
-    [cmdCenter.nextTrackCommand removeTarget:nil];
-    [cmdCenter.previousTrackCommand removeTarget:nil];
-    [cmdCenter.changePlaybackPositionCommand removeTarget:nil];
+void nowplaying_clearCommandHandler(void) {
+	MPRemoteCommandCenter *cc = MPRemoteCommandCenter.sharedCommandCenter;
+	[cc.playCommand removeTarget:nil];
+	[cc.pauseCommand removeTarget:nil];
+	[cc.togglePlayPauseCommand removeTarget:nil];
+	[cc.nextTrackCommand removeTarget:nil];
+	[cc.previousTrackCommand removeTarget:nil];
+	[cc.changePlaybackPositionCommand removeTarget:nil];
 }
 */
 import "C"
@@ -173,12 +154,5 @@ func (d *darwinController) SetCommandHandler(handler func(Command, float64)) {
 		C.nowplaying_setCommandHandler()
 	} else {
 		C.nowplaying_clearCommandHandler()
-	}
-}
-
-//export goNowPlayingCommand
-func goNowPlayingCommand(cmd C.int, value C.double) {
-	if globalHandler != nil {
-		globalHandler(Command(cmd), float64(value))
 	}
 }

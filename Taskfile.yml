@@ -169,12 +169,21 @@ tasks:
     cmds:
       - CGO_LDFLAGS="-framework UniformTypeIdentifiers" go run -tags "desktop dev" ./cmd/go-beats-desktop -assetdir ./desktop/frontend/dist
 
+  # ── Pre-Push ────────────────────────────────────────────────────────────
+
+  pre-push:
+    desc: Run all checks and clean before pushing
+    cmds:
+      - task: check
+      - task: clean
+
   # ── Cleanup ─────────────────────────────────────────────────────────────
 
   clean:
     desc: Remove build artifacts
     cmds:
       - rm -f {{.APP_NAME}}
+      - rm -f go-beats-desktop
       - rm -rf dist/
       - rm -f coverage.out coverage.html
       - echo "Cleaned!"

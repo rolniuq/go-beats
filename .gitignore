@@ -20,4 +20,17 @@ music/*.flac
 
 # Task runner
 .task/
-dist
+dist/
+
+# Coverage
+coverage.out
+coverage.html
+
+# Build artifacts
+*.o
+*.a
+*.so
+*.dylib
+
+# Test binaries (leftover from go test -c)
+*.test
