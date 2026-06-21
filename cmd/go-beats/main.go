@@ -174,6 +174,10 @@ func main() {
 	mcpFlag := flag.Bool("mcp", false, "Run as MCP server over stdio")
 	flag.Parse()
 
+	if !*mcpFlag {
+		fmt.Println("🎵 Starting go-beats...")
+	}
+
 	if *versionFlag {
 		fmt.Printf("go-beats %s (commit: %s, built: %s)\n", version, commit, date)
 		return
