@@ -37,8 +37,7 @@ type Engine struct {
 
 	playing bool
 	paused  bool
-	loop    bool
-	shuffle bool
+	loop bool
 
 	// Volume in dB, 0 = normal, -5 = quiet, 5 = loud
 	volumeLevel float64
