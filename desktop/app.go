@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/rolniuq/go-beats/internal/audio"
 	"github.com/rolniuq/go-beats/internal/notification"
 	"github.com/rolniuq/go-beats/internal/pomodoro"
 	"github.com/rolniuq/go-beats/internal/radio"
+	"github.com/rolniuq/go-beats/internal/util"
 )
 
 // TrackDTO is the JSON-safe track info
@@ -206,8 +206,8 @@ func (a *App) GetState() PlayerState {
 
 		pos := a.engine.GetPosition()
 		dur := a.engine.GetDuration()
-		state.Position = formatDuration(pos)
-		state.Duration = formatDuration(dur)
+		state.Position = util.FormatDuration(pos)
+		state.Duration = util.FormatDuration(dur)
 		state.PositionMs = pos.Milliseconds()
 		state.DurationMs = dur.Milliseconds()
 	}
@@ -245,7 +245,7 @@ func (a *App) GetState() PlayerState {
 		default:
 			state.PomodoroPhase = "stopped"
 		}
-		state.PomodoroRemaining = formatDuration(a.pomo.Remaining())
+		state.PomodoroRemaining = util.FormatDuration(a.pomo.Remaining())
 		state.PomodoroProgress = a.pomo.Progress()
 		state.PomodoroRunning = a.pomo.IsRunning()
 		state.PomodoroSessions = a.pomo.Sessions()
@@ -265,7 +265,7 @@ func (a *App) GetTracks() []TrackDTO {
 		result[i] = TrackDTO{
 			Name:     t.Name,
 			Path:     t.Path,
-			Duration: formatDuration(t.Duration),
+			Duration: util.FormatDuration(t.Duration),
 		}
 	}
 	return result
@@ -484,7 +484,7 @@ func (a *App) BrowseMusicFolder() (int, error) {
 
 	for _, dir := range candidates {
 		if info, err := os.Stat(dir); err == nil && info.IsDir() {
-			if hasMP3Files(dir) {
+			if util.HasMP3Files(dir) {
 				return a.LoadMusicDirectory(dir)
 			}
 		}
@@ -493,26 +493,4 @@ func (a *App) BrowseMusicFolder() (int, error) {
 	return 0, fmt.Errorf("no music directory with .mp3 files found")
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────
 
-func formatDuration(d time.Duration) string {
-	if d < 0 {
-		d = 0
-	}
-	mins := int(d.Minutes())
-	secs := int(d.Seconds()) % 60
-	return fmt.Sprintf("%02d:%02d", mins, secs)
-}
-
-func hasMP3Files(dir string) bool {
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return false
-	}
-	for _, entry := range entries {
-		if !entry.IsDir() && strings.EqualFold(filepath.Ext(entry.Name()), ".mp3") {
-			return true
-		}
-	}
-	return false
-}

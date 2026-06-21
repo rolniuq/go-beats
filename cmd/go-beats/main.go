@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/rolniuq/go-beats/internal/audio"
 	"github.com/rolniuq/go-beats/internal/radio"
 	"github.com/rolniuq/go-beats/internal/ui"
+	"github.com/rolniuq/go-beats/internal/util"
 )
 
 // Set by GoReleaser ldflags at build time
@@ -22,8 +22,6 @@ var (
 )
 
 func main() {
-	fmt.Println("🎵 Starting go-beats...")
-
 	// CLI flags
 	radioModeFlag := flag.Bool("radio", false, "Start directly in radio mode")
 	stationIdxFlag := flag.Int("station", -1, "Auto-play station index (implies --radio)")
@@ -94,13 +92,7 @@ func main() {
 	} else {
 		if err := engine.ScanDirectory(absDir); err != nil {
 			if !startInRadio {
-				hasMP3, scanErr := hasMP3Files(absDir)
-				if scanErr != nil {
-					fmt.Fprintf(os.Stderr, "Error scanning music: %v\n", err)
-					os.Exit(1)
-				}
-
-				if !hasMP3 {
+				if !util.HasMP3Files(absDir) {
 					fmt.Printf("No local tracks found in %s\n", absDir)
 					fmt.Println("Starting in radio mode. Use --list-stations to browse stations.")
 					startInRadio = true
@@ -136,23 +128,4 @@ func main() {
 	// Cleanup
 	engine.Stop()
 	radioPlayer.Stop()
-	fmt.Println("\n👋 Thanks for chilling with go-beats!")
-}
-
-func hasMP3Files(dir string) (bool, error) {
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return false, err
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		if strings.EqualFold(filepath.Ext(entry.Name()), ".mp3") {
-			return true, nil
-		}
-	}
-
-	return false, nil
 }

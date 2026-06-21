@@ -15,6 +15,7 @@ import (
 	"github.com/rolniuq/go-beats/internal/notification"
 	"github.com/rolniuq/go-beats/internal/pomodoro"
 	"github.com/rolniuq/go-beats/internal/radio"
+	"github.com/rolniuq/go-beats/internal/util"
 )
 
 // ── Messages ────────────────────────────────────────────────────────────────
@@ -678,8 +679,8 @@ func (m Model) renderProgressBar(pos, dur time.Duration, width int) string {
 	bar := progressStyle.Render(strings.Repeat("━", filled)) +
 		mutedStyle.Render(strings.Repeat("─", empty))
 
-	posStr := formatDuration(pos)
-	durStr := formatDuration(dur)
+	posStr := util.FormatDuration(pos)
+	durStr := util.FormatDuration(dur)
 
 	return fmt.Sprintf("  %s %s %s",
 		mutedStyle.Render(posStr),
@@ -867,19 +868,3 @@ func (m Model) renderHelp() string {
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
-
-func formatDuration(d time.Duration) string {
-	if d < 0 {
-		d = 0
-	}
-	mins := int(d.Minutes())
-	secs := int(d.Seconds()) % 60
-	return fmt.Sprintf("%02d:%02d", mins, secs)
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
