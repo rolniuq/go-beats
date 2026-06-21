@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/rolniuq/go-beats/desktop/nowplaying"
 	"github.com/rolniuq/go-beats/internal/audio"
 	"github.com/rolniuq/go-beats/internal/notification"
 	"github.com/rolniuq/go-beats/internal/pomodoro"
@@ -74,6 +75,7 @@ type App struct {
 	engine      *audio.Engine
 	radioPlayer *radio.Player
 	pomo        *pomodoro.Timer
+	np          nowplaying.Controller
 	mode        string // "local" or "radio"
 	musicDir    string
 }
@@ -97,6 +99,10 @@ func (a *App) Startup(ctx context.Context) {
 
 	// Initialize pomodoro timer
 	a.pomo = pomodoro.NewTimer(pomodoro.DefaultConfig())
+
+	// Initialize Now Playing controller
+	a.np = nowplaying.New()
+	a.np.SetCommandHandler(a.handleNowPlayingCommand)
 
 	// Play notification sound when a pomodoro phase ends
 	a.pomo.OnPhaseEnd = func(completed pomodoro.Phase, next pomodoro.Phase) {
@@ -143,6 +149,21 @@ func (a *App) Shutdown(ctx context.Context) {
 	if a.radioPlayer != nil {
 		a.radioPlayer.Stop()
 	}
+	if a.np != nil {
+		a.np.SetCommandHandler(nil)
+		a.np.SetStopped()
+	}
+}
+
+func (a *App) handleNowPlayingCommand(cmd nowplaying.Command, value float64) {
+	switch cmd {
+	case nowplaying.CmdTogglePlayPause, nowplaying.CmdPlay, nowplaying.CmdPause:
+		a.TogglePlay()
+	case nowplaying.CmdNextTrack:
+		a.NextTrack()
+	case nowplaying.CmdPreviousTrack:
+		a.PrevTrack()
+	}
 }
 
 func (a *App) pomodoroTicker() {
@@ -171,6 +192,18 @@ func (a *App) pomodoroTicker() {
 					} else {
 						a.engine.Next()
 					}
+				}
+			}
+
+			// Update Now Playing progress
+			if a.mode == "local" && a.engine != nil {
+				if a.engine.IsPlaying() {
+					pos := a.engine.GetPosition()
+					a.np.SetProgress(pos)
+				}
+			} else if a.mode == "radio" && a.radioPlayer != nil {
+				if a.radioPlayer.IsPlaying() {
+					a.np.SetPaused() // Radio: just mark as playing, no progress
 				}
 			}
 
@@ -296,7 +329,15 @@ func (a *App) PlayTrack(index int) error {
 	if a.engine == nil {
 		return fmt.Errorf("engine not initialized")
 	}
-	return a.engine.Play(index)
+	err := a.engine.Play(index)
+	if err == nil {
+		track := a.engine.CurrentTrack()
+		if track != nil {
+			dur := a.engine.GetDuration()
+			a.np.SetPlaying(track.Name, dur)
+		}
+	}
+	return err
 }
 
 // TogglePlay toggles play/pause
@@ -304,6 +345,14 @@ func (a *App) TogglePlay() {
 	if a.mode == "radio" {
 		if a.radioPlayer != nil {
 			a.radioPlayer.Pause()
+			if a.radioPlayer.IsPaused() {
+				a.np.SetPaused()
+			} else {
+				station := a.radioPlayer.CurrentStation()
+				if station != nil {
+					a.np.SetStation(station.Name)
+				}
+			}
 		}
 		return
 	}
@@ -314,9 +363,23 @@ func (a *App) TogglePlay() {
 	if a.engine.CurrentIndex() < 0 {
 		if a.engine.TrackCount() > 0 {
 			a.engine.Play(0)
+			track := a.engine.CurrentTrack()
+			if track != nil {
+				dur := a.engine.GetDuration()
+				a.np.SetPlaying(track.Name, dur)
+			}
 		}
 	} else {
 		a.engine.Pause()
+		if a.engine.IsPaused() {
+			a.np.SetPaused()
+		} else {
+			track := a.engine.CurrentTrack()
+			if track != nil {
+				dur := a.engine.GetDuration()
+				a.np.SetPlaying(track.Name, dur)
+			}
+		}
 	}
 }
 
@@ -324,10 +387,19 @@ func (a *App) TogglePlay() {
 func (a *App) NextTrack() {
 	if a.mode == "radio" && a.radioPlayer != nil {
 		a.radioPlayer.NextStation()
+		station := a.radioPlayer.CurrentStation()
+		if station != nil {
+			a.np.SetStation(station.Name)
+		}
 		return
 	}
 	if a.engine != nil {
 		a.engine.Next()
+		track := a.engine.CurrentTrack()
+		if track != nil {
+			dur := a.engine.GetDuration()
+			a.np.SetPlaying(track.Name, dur)
+		}
 	}
 }
 
@@ -335,10 +407,19 @@ func (a *App) NextTrack() {
 func (a *App) PrevTrack() {
 	if a.mode == "radio" && a.radioPlayer != nil {
 		a.radioPlayer.PrevStation()
+		station := a.radioPlayer.CurrentStation()
+		if station != nil {
+			a.np.SetStation(station.Name)
+		}
 		return
 	}
 	if a.engine != nil {
 		a.engine.Prev()
+		track := a.engine.CurrentTrack()
+		if track != nil {
+			dur := a.engine.GetDuration()
+			a.np.SetPlaying(track.Name, dur)
+		}
 	}
 }
 
@@ -381,10 +462,12 @@ func (a *App) SetMode(mode string) {
 		if a.engine != nil {
 			a.engine.Stop()
 		}
+		a.np.SetStopped()
 	} else {
 		if a.radioPlayer != nil {
 			a.radioPlayer.Stop()
 		}
+		a.np.SetStopped()
 	}
 	a.mode = mode
 }
@@ -394,7 +477,14 @@ func (a *App) PlayStation(index int) error {
 	if a.radioPlayer == nil {
 		return fmt.Errorf("radio player not initialized")
 	}
-	return a.radioPlayer.Play(index)
+	err := a.radioPlayer.Play(index)
+	if err == nil {
+		station := a.radioPlayer.CurrentStation()
+		if station != nil {
+			a.np.SetStation(station.Name)
+		}
+	}
+	return err
 }
 
 // RetryRadio retries the failed radio connection
